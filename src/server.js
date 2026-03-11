@@ -1,4 +1,4 @@
-﻿import path from 'node:path';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import cors from 'cors';
 import express from 'express';
@@ -51,8 +51,8 @@ app.use('/api/v1', authRouter);
 app.use('/api/v1', publicRouter);
 app.use('/api/v1', adminRouter);
 
-app.use('/assets', express.static(path.join(publicDir, 'assets'), { maxAge: '7d', immutable: true }));
-app.use(express.static(publicDir, { extensions: ['html'], maxAge: '1h' }));
+app.use('/assets', express.static(path.join(publicDir, 'assets'), { maxAge: '1h', etag: true }));
+app.use(express.static(publicDir, { extensions: ['html'], maxAge: 0, etag: true }));
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(publicDir, 'index.html'));

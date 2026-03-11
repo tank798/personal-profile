@@ -3,28 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>内容管理</title>
-    <link rel="stylesheet" href="/assets/styles.css" />
+    <title>鍐呭绠＄悊</title>
+    <link rel="stylesheet" href="/assets/styles.css?v=20260311-1" />
   </head>
   <body>
     <div class="bg-grain"></div>
 
     <section class="login-wrap" id="login-wrap">
       <div class="admin-card">
-        <h1 style="margin-top:0">后台登录</h1>
-        <p class="hint">仅你自己可用。登录后可以更新头像和帖子。</p>
-        <p class="hint">登录态默认保持约30天，手机无需频繁重登。</p>
+        <h1 style="margin-top:0">鍚庡彴鐧诲綍</h1>
+        <p class="hint">浠呬綘鑷繁鍙敤銆傜櫥褰曞悗鍙互鏇存柊澶村儚鍜屽笘瀛愩€?/p>
+        <p class="hint">鐧诲綍鎬侀粯璁や繚鎸佺害30澶╋紝鎵嬫満鏃犻渶棰戠箒閲嶇櫥銆?/p>
         <form id="login-form">
           <div class="form-row">
-            <label for="login-email">邮箱</label>
+            <label for="login-email">閭</label>
             <input class="input" id="login-email" name="email" type="email" required autocomplete="email" />
           </div>
           <div class="form-row">
-            <label for="login-password">密码</label>
+            <label for="login-password">瀵嗙爜</label>
             <input class="input" id="login-password" name="password" type="password" required autocomplete="current-password" />
           </div>
           <div class="form-actions">
-            <button class="btn btn-primary" type="submit">登录</button>
+            <button class="btn btn-primary" type="submit">鐧诲綍</button>
           </div>
         </form>
       </div>
@@ -32,102 +32,102 @@
 
     <main class="admin-shell hidden" id="admin-shell">
       <header class="admin-head">
-        <h1 id="admin-title">内容管理</h1>
+        <h1 id="admin-title">鍐呭绠＄悊</h1>
         <div class="form-actions" style="margin-top:8px">
-          <a class="btn btn-secondary" href="/">查看主页</a>
-          <button class="btn btn-ghost" type="button" id="logout-btn">退出登录</button>
+          <a class="btn btn-secondary" href="/">鏌ョ湅涓婚〉</a>
+          <button class="btn btn-ghost" type="button" id="logout-btn">閫€鍑虹櫥褰?/button>
         </div>
       </header>
 
       <section class="admin-grid">
         <article class="admin-card full">
-          <h2 style="margin-top:0">个人信息</h2>
+          <h2 style="margin-top:0">涓汉淇℃伅</h2>
           <form id="profile-form">
             <div class="form-row">
-              <label for="display-name">显示名称</label>
+              <label for="display-name">鏄剧ず鍚嶇О</label>
               <input class="input" id="display-name" name="displayName" maxlength="80" required />
             </div>
             <div class="form-row">
-              <label for="about-md">关于我（显示在头像右侧）</label>
+              <label for="about-md">鍏充簬鎴戯紙鏄剧ず鍦ㄥご鍍忓彸渚э級</label>
               <textarea class="textarea" id="about-md" name="aboutMd" style="min-height:130px"></textarea>
             </div>
             <div class="form-row">
-              <label>头像</label>
+              <label>澶村儚</label>
               <div class="row-inline">
                 <input class="input" id="avatar-file" type="file" accept="image/*" style="padding:8px" />
-                <button class="btn btn-secondary btn-sm" type="button" id="upload-avatar-btn">裁剪并上传头像</button>
+                <button class="btn btn-secondary btn-sm" type="button" id="upload-avatar-btn">瑁佸壀骞朵笂浼犲ご鍍?/button>
               </div>
               <input id="avatar-media-id" type="hidden" />
-              <img class="upload-preview hidden" id="avatar-preview" alt="头像预览" />
-              <div class="hint">支持缩放与裁剪。建议使用清晰正方形图片。</div>
+              <img class="upload-preview hidden" id="avatar-preview" alt="澶村儚棰勮" />
+              <div class="hint">鏀寔缂╂斁涓庤鍓€傚缓璁娇鐢ㄦ竻鏅版鏂瑰舰鍥剧墖銆?/div>
             </div>
             <div class="form-actions">
-              <button class="btn btn-primary" type="submit">保存个人信息</button>
+              <button class="btn btn-primary" type="submit">淇濆瓨涓汉淇℃伅</button>
             </div>
           </form>
         </article>
 
         <article class="admin-card full">
-          <h2 style="margin-top:0">写新帖子</h2>
+          <h2 style="margin-top:0">鍐欐柊甯栧瓙</h2>
           <form id="post-form">
             <input id="editing-post-id" type="hidden" />
             <div class="form-row">
-              <label for="post-title">标题</label>
+              <label for="post-title">鏍囬</label>
               <input class="input" id="post-title" name="title" maxlength="160" required />
             </div>
             <div class="form-row">
-              <label for="post-slug">Slug（URL片段）</label>
+              <label for="post-slug">Slug锛圲RL鐗囨锛?/label>
               <input class="input" id="post-slug" name="slug" maxlength="80" required />
             </div>
             <div class="form-row">
-              <label for="post-summary">摘要（可选）</label>
+              <label for="post-summary">鎽樿锛堝彲閫夛級</label>
               <textarea class="textarea" id="post-summary" name="summary" maxlength="300"></textarea>
             </div>
             <div class="form-row">
-              <label for="post-content">正文（Markdown）</label>
+              <label for="post-content">姝ｆ枃锛圡arkdown锛?/label>
               <textarea class="textarea" id="post-content" name="contentMd" style="min-height:180px" required></textarea>
             </div>
             <div class="form-row">
-              <label for="cover-file">封面图（选图后自动上传）</label>
+              <label for="cover-file">灏侀潰鍥撅紙閫夊浘鍚庤嚜鍔ㄤ笂浼狅級</label>
               <input class="input" id="cover-file" type="file" accept="image/*" style="padding:8px" />
               <input id="cover-media-id" type="hidden" />
-              <img class="upload-preview hidden" id="cover-preview" alt="封面预览" />
-              <div class="hint">选择图片后会自动上传，保存帖子后生效。</div>
+              <img class="upload-preview hidden" id="cover-preview" alt="灏侀潰棰勮" />
+              <div class="hint">閫夋嫨鍥剧墖鍚庝細鑷姩涓婁紶锛屼繚瀛樺笘瀛愬悗鐢熸晥銆?/div>
             </div>
             <div class="form-row">
-              <label for="post-images-file">帖子图片（可多选，自动上传）</label>
+              <label for="post-images-file">甯栧瓙鍥剧墖锛堝彲澶氶€夛紝鑷姩涓婁紶锛?/label>
               <input class="input" id="post-images-file" type="file" accept="image/*" multiple style="padding:8px" />
-              <div class="hint">可一次选择多张，上传完成后可在下方删除不需要的图片。</div>
+              <div class="hint">鍙竴娆￠€夋嫨澶氬紶锛屼笂浼犲畬鎴愬悗鍙湪涓嬫柟鍒犻櫎涓嶉渶瑕佺殑鍥剧墖銆?/div>
               <div class="upload-multi-grid" id="post-images-preview"></div>
             </div>
             <div class="row-inline">
               <div class="form-row" style="margin:0; min-width:180px; flex:1">
-                <label for="post-status">状态</label>
+                <label for="post-status">鐘舵€?/label>
                 <select class="select" id="post-status" name="status">
-                  <option value="draft">草稿</option>
-                  <option value="published">发布</option>
-                  <option value="archived">归档</option>
+                  <option value="draft">鑽夌</option>
+                  <option value="published">鍙戝竷</option>
+                  <option value="archived">褰掓。</option>
                 </select>
               </div>
               <div class="form-row" style="margin:0; min-width:120px">
-                <label for="post-pinned">置顶</label>
+                <label for="post-pinned">缃《</label>
                 <select class="select" id="post-pinned" name="isPinned">
-                  <option value="false">否</option>
-                  <option value="true">是</option>
+                  <option value="false">鍚?/option>
+                  <option value="true">鏄?/option>
                 </select>
               </div>
             </div>
             <div class="form-actions">
-              <button class="btn btn-primary" type="submit" id="save-post-btn">保存帖子</button>
-              <button class="btn btn-ghost" type="button" id="reset-post-btn">清空表单</button>
+              <button class="btn btn-primary" type="submit" id="save-post-btn">淇濆瓨甯栧瓙</button>
+              <button class="btn btn-ghost" type="button" id="reset-post-btn">娓呯┖琛ㄥ崟</button>
             </div>
           </form>
         </article>
 
         <article class="admin-card full">
-          <h2 style="margin-top:0">帖子列表</h2>
+          <h2 style="margin-top:0">甯栧瓙鍒楄〃</h2>
           <div class="admin-post-list" id="post-list">
-            <div class="loading-block">加载中...</div>
+            <div class="loading-block">鍔犺浇涓?..</div>
           </div>
         </article>
       </section>
@@ -135,22 +135,22 @@
 
     <dialog class="crop-dialog" id="avatar-crop-dialog">
       <div class="crop-panel">
-        <h3>裁剪头像</h3>
-        <p class="hint">拖动图片调整位置，滑块调整缩放。</p>
+        <h3>瑁佸壀澶村儚</h3>
+        <p class="hint">鎷栧姩鍥剧墖璋冩暣浣嶇疆锛屾粦鍧楄皟鏁寸缉鏀俱€?/p>
         <div class="crop-stage-wrap">
           <canvas id="avatar-crop-canvas" class="crop-canvas" width="320" height="320"></canvas>
         </div>
         <div class="form-row" style="margin:12px 0 8px">
-          <label for="avatar-zoom">缩放</label>
+          <label for="avatar-zoom">缂╂斁</label>
           <input id="avatar-zoom" type="range" min="1" max="3" step="0.01" value="1" />
         </div>
         <div class="form-actions" style="justify-content:flex-end">
-          <button class="btn btn-ghost" id="avatar-crop-cancel" type="button">取消</button>
-          <button class="btn btn-primary" id="avatar-crop-confirm" type="button">确认裁剪</button>
+          <button class="btn btn-ghost" id="avatar-crop-cancel" type="button">鍙栨秷</button>
+          <button class="btn btn-primary" id="avatar-crop-confirm" type="button">纭瑁佸壀</button>
         </div>
       </div>
     </dialog>
 
-    <script type="module" src="/assets/admin.js"></script>
+    <script type="module" src="/assets/admin.js?v=20260311-1"></script>
   </body>
 </html>
