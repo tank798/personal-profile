@@ -440,9 +440,7 @@ h3 {
   transition: transform 180ms ease;
 }
 
-.carousel-btn.next .carousel-icon {
-  transform: rotate(180deg);
-}
+
 
 .carousel-btn.prev {
   left: 6px;
