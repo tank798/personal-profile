@@ -333,7 +333,7 @@ h3 {
 
 .carousel-btn {
   position: absolute;
-  top: 50%;
+  top: var(--carousel-btn-top, 50%);
   transform: translateY(-50%);
   width: 46px;
   height: 58px;
@@ -347,7 +347,7 @@ h3 {
   cursor: pointer;
   box-shadow: 0 12px 28px rgba(107, 79, 58, 0.14);
   backdrop-filter: blur(10px);
-  transition: transform 180ms ease, opacity 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  transition: top 180ms ease, transform 180ms ease, opacity 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
   z-index: 20;
 }
 
