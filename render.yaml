@@ -17,7 +17,7 @@
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRES_IN_SECONDS
-        value: "86400"
+        value: "2592000"
       - key: CORS_ORIGINS
         sync: false
       - key: ADMIN_EMAIL
@@ -50,3 +50,4 @@ databases:
     plan: free
     databaseName: homepage_platform
     user: homepage_user
+

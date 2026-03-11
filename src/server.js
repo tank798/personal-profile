@@ -51,7 +51,8 @@ app.use('/api/v1', authRouter);
 app.use('/api/v1', publicRouter);
 app.use('/api/v1', adminRouter);
 
-app.use(express.static(publicDir, { extensions: ['html'] }));
+app.use('/assets', express.static(path.join(publicDir, 'assets'), { maxAge: '7d', immutable: true }));
+app.use(express.static(publicDir, { extensions: ['html'], maxAge: '1h' }));
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(publicDir, 'index.html'));
@@ -105,3 +106,4 @@ app.listen(env.port, () => {
     console.error('Bootstrap fatal error:', error);
   });
 });
+

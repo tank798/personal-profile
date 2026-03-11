@@ -77,7 +77,7 @@ Server: `http://localhost:8080`
   - `GET /api/v1/posts/{postId}`
   - `GET /api/v1/tags`
 
-## Upload Note
+## Mobile Experience`r`n`r`n- Default login token lifetime is 30 days (`JWT_EXPIRES_IN_SECONDS=2592000`).`r`n- Admin page remembers the last login email.`r`n- Static assets use cache headers to improve repeat load speed on mobile.`r`n`r`n## Upload Note
 
 `/admin` uses signed upload URL flow. If object storage is not configured, upload will fall back to data-url demo mode for local development.
 
@@ -90,3 +90,4 @@ Server: `http://localhost:8080`
 
 Yes. Publishing this repository to GitHub allows others to clone and deploy their own copy.
 They will still need to configure their own `.env`, database, and object storage.
+

@@ -10,6 +10,9 @@
   slugify,
 } from './common.js';
 
+const LAST_LOGIN_EMAIL_KEY = 'homepage_last_login_email';
+const DASHBOARD_INIT_RETRY = 3;
+
 const loginWrapEl = document.getElementById('login-wrap');
 const loginFormEl = document.getElementById('login-form');
 const loginEmailEl = document.getElementById('login-email');
@@ -71,6 +74,19 @@ function showPreview(el, url) {
   el.classList.remove('hidden');
 }
 
+function getLastLoginEmail() {
+  return localStorage.getItem(LAST_LOGIN_EMAIL_KEY) || '';
+}
+
+function setLastLoginEmail(email) {
+  if (!email) return;
+  localStorage.setItem(LAST_LOGIN_EMAIL_KEY, email.trim());
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function uploadMedia(file, purpose) {
   const upload = await apiFetch('/admin/media/upload-url', {
     method: 'POST',
@@ -97,7 +113,7 @@ async function uploadMedia(file, purpose) {
     if (!putResp.ok) {
       throw new Error(`上传失败(${putResp.status})`);
     }
-  } catch (error) {
+  } catch {
     // Dev fallback: store as data URL when object storage is not configured.
     uploadedUrl = await readFileAsDataUrl(file);
     showToast('未检测到对象存储，已切换为本地演示上传模式');
@@ -130,6 +146,11 @@ function openDashboard() {
 function openLogin() {
   adminShellEl.classList.add('hidden');
   loginWrapEl.classList.remove('hidden');
+
+  const rememberedEmail = getLastLoginEmail();
+  if (rememberedEmail && !loginEmailEl.value.trim()) {
+    loginEmailEl.value = rememberedEmail;
+  }
 }
 
 async function fetchMe() {
@@ -270,6 +291,9 @@ async function handleLogin(event) {
   });
 
   setToken(result.accessToken);
+  setLastLoginEmail(email);
+  loginPasswordEl.value = '';
+
   showToast('登录成功');
   await initializeDashboard();
 }
@@ -278,6 +302,34 @@ async function initializeDashboard() {
   openDashboard();
   await fetchMe();
   await loadPosts();
+}
+
+async function initializeDashboardWithRetry() {
+  for (let attempt = 1; attempt <= DASHBOARD_INIT_RETRY; attempt += 1) {
+    try {
+      await initializeDashboard();
+      return true;
+    } catch (error) {
+      if (error?.status === 401) {
+        setToken('');
+        openLogin();
+        showToast('登录状态失效，请重新登录');
+        return false;
+      }
+
+      if (attempt < DASHBOARD_INIT_RETRY) {
+        showToast(`服务正在唤醒，自动重试(${attempt}/${DASHBOARD_INIT_RETRY - 1})...`);
+        await sleep(2500 * attempt);
+        continue;
+      }
+
+      openLogin();
+      showToast('服务响应较慢，请稍后再试');
+      return false;
+    }
+  }
+
+  return false;
 }
 
 async function handleProfileSubmit(event) {
@@ -374,6 +426,7 @@ function wireEvents() {
 
   logoutBtnEl.addEventListener('click', () => {
     setToken('');
+    loginPasswordEl.value = '';
     openLogin();
     showToast('已退出');
   });
@@ -412,20 +465,18 @@ function wireEvents() {
 async function boot() {
   wireEvents();
 
+  const rememberedEmail = getLastLoginEmail();
+  if (rememberedEmail) {
+    loginEmailEl.value = rememberedEmail;
+  }
+
   const token = getToken();
   if (!token) {
     openLogin();
     return;
   }
 
-  try {
-    await initializeDashboard();
-  } catch (error) {
-    console.error(error);
-    setToken('');
-    openLogin();
-    showToast('登录状态失效，请重新登录');
-  }
+  await initializeDashboardWithRetry();
 }
 
 boot().catch((error) => {
