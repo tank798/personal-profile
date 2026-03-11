@@ -51,7 +51,8 @@ export async function ensureSchema() {
     return;
   }
 
-  const schemaSql = await fs.readFile(schemaPath, 'utf8');
+  let schemaSql = await fs.readFile(schemaPath, 'utf8');
+  schemaSql = schemaSql.replace(/^\uFEFF/, '');
   await query(schemaSql);
   console.log('Database schema initialized from db/schema.sql');
 }
@@ -118,3 +119,4 @@ export async function ensureSingleOwner() {
     );
   }
 }
+
