@@ -71,12 +71,17 @@ h3 {
 }
 
 .profile-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   max-width: 660px;
   margin-inline: auto;
   padding: 24px 24px 22px;
   border: 1px solid var(--line);
   border-radius: 28px;
-  background: linear-gradient(180deg, rgba(255, 253, 249, 0.98), rgba(246, 238, 229, 0.96));
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.72), transparent 42%),
+    linear-gradient(180deg, rgba(255, 253, 249, 0.99), rgba(246, 238, 229, 0.96));
   box-shadow: var(--shadow-soft);
   display: grid;
   justify-items: center;
@@ -85,6 +90,42 @@ h3 {
   text-align: center;
 }
 
+.profile-card::before {
+  content: "";
+  position: absolute;
+  right: -78px;
+  top: -92px;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(169, 140, 114, 0.18) 0%, rgba(169, 140, 114, 0.08) 34%, rgba(169, 140, 114, 0) 72%);
+  filter: blur(6px);
+  opacity: 0.95;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.profile-card::after {
+  content: "";
+  position: absolute;
+  left: -88px;
+  bottom: -104px;
+  width: 244px;
+  height: 244px;
+  border-radius: 50%;
+  border: 1px solid rgba(169, 140, 114, 0.16);
+  box-shadow:
+    0 0 0 22px rgba(169, 140, 114, 0.05),
+    0 0 0 46px rgba(169, 140, 114, 0.022);
+  opacity: 0.92;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.profile-card > * {
+  position: relative;
+  z-index: 1;
+}
 .avatar-wrap {
   width: 136px;
   height: 136px;
@@ -877,13 +918,32 @@ select {
 }
 
 @media (max-width: 839px) {
+  .profile-card::before {
+    right: -96px;
+    top: -110px;
+    width: 220px;
+    height: 220px;
+    opacity: 0.78;
+  }
+
+  .profile-card::after {
+    left: -112px;
+    bottom: -126px;
+    width: 216px;
+    height: 216px;
+    box-shadow:
+      0 0 0 18px rgba(169, 140, 114, 0.045),
+      0 0 0 36px rgba(169, 140, 114, 0.02);
+  }
+
   .profile-card {
     max-width: 100%;
     padding: 22px 18px 20px;
     border-radius: 24px;
   }
 
-  .avatar-wrap {
+  
+.avatar-wrap {
     width: 124px;
     height: 124px;
   }
@@ -947,7 +1007,8 @@ select {
     max-width: 660px;
   }
 
-  .avatar-wrap {
+  
+.avatar-wrap {
     width: 144px;
     height: 144px;
   }
