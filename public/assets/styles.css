@@ -71,17 +71,17 @@ h3 {
 }
 
 .profile-card {
-  max-width: 640px;
+  max-width: 660px;
   margin-inline: auto;
-  padding: 20px 22px;
+  padding: 24px 24px 22px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--surface-card) 94%, #f3e7db 6%);
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(255, 253, 249, 0.98), rgba(246, 238, 229, 0.96));
   box-shadow: var(--shadow-soft);
   display: grid;
   justify-items: center;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   text-align: center;
 }
 
@@ -113,54 +113,119 @@ h3 {
 
 .profile-main {
   display: grid;
-  gap: 8px;
+  gap: 10px;
   justify-items: center;
 }
 
 .profile-name {
   margin: 0;
-  font-size: clamp(2rem, 7.2vw, 3.8rem);
-  line-height: 1.06;
+  font-family: "Bodoni MT", "Didot", "Iowan Old Style", "Noto Serif SC", "Songti SC", serif;
+  font-weight: 600;
+  font-size: clamp(2.15rem, 7.6vw, 4.2rem);
+  line-height: 0.98;
+  letter-spacing: 0.03em;
+  text-wrap: balance;
+  color: color-mix(in srgb, var(--text-primary) 94%, var(--brand-primary) 6%);
 }
 
 .profile-about {
   margin: 0;
-  color: var(--text-secondary);
-  font-size: clamp(1rem, 3.4vw, 1.24rem);
-  line-height: 1.78;
-  white-space: pre-line;
-  max-width: 30ch;
+  display: grid;
+  gap: 0.48rem;
+  max-width: 34ch;
 }
 
+.profile-line {
+  display: block;
+  font-family: "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  color: var(--text-secondary);
+  font-size: clamp(1rem, 3.2vw, 1.16rem);
+  line-height: 1.72;
+  letter-spacing: 0.01em;
+}
+
+.profile-line.is-lead {
+  font-family: "Noto Serif SC", "Songti SC", serif;
+  color: color-mix(in srgb, var(--text-primary) 88%, var(--brand-primary) 12%);
+  font-size: clamp(1.08rem, 3.4vw, 1.28rem);
+  letter-spacing: 0.015em;
+}
+
+.profile-line.is-tagline {
+  color: var(--brand-primary);
+  font-size: clamp(0.96rem, 2.8vw, 1.02rem);
+  font-weight: 600;
+  letter-spacing: 0.22em;
+}
 .content-head {
-  margin-top: 18px;
+  margin-top: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
   text-align: center;
 }
 
+.content-accent {
+  position: relative;
+  flex: 0 0 clamp(52px, 12vw, 116px);
+  height: 18px;
+  opacity: 0.92;
+}
+
+.content-accent::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 14px;
+  top: 50%;
+  height: 1px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, transparent, rgba(107, 79, 58, 0.38), rgba(169, 140, 114, 0.78));
+}
+
+.content-accent::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  transform: translateY(-50%);
+  background: rgba(107, 79, 58, 0.72);
+  box-shadow: -11px 0 0 rgba(169, 140, 114, 0.68), -22px 0 0 rgba(107, 79, 58, 0.26);
+}
+
+.content-accent.right {
+  transform: scaleX(-1);
+}
 .content-title {
   margin: 0;
   color: color-mix(in srgb, var(--brand-primary) 92%, black 8%);
   font-family: "STKaiti", "KaiTi", "Kaiti SC", "HanziPen SC", "Noto Serif SC", serif;
   font-style: italic;
   font-weight: 600;
-  font-size: clamp(2rem, 8vw, 3.1rem);
-  letter-spacing: 0.1em;
+  font-size: clamp(2.05rem, 8vw, 3.18rem);
+  letter-spacing: 0.14em;
   text-shadow: 0 7px 22px rgba(107, 79, 58, 0.16);
   transform: rotate(-0.8deg);
 }
 
 .post-carousel-wrap {
   position: relative;
-  max-width: 780px;
-  margin: 8px auto 0;
+  max-width: 900px;
+  margin: 14px auto 0;
+  padding-inline: 22px;
 }
 
 .post-carousel {
   position: relative;
-  height: clamp(340px, 58vh, 500px);
+  height: clamp(360px, 60vh, 520px);
   overflow: hidden;
   touch-action: pan-y;
   user-select: none;
+  isolation: isolate;
 }
 
 .post-card {
@@ -178,21 +243,31 @@ h3 {
 .post-card.deck-card {
   position: absolute;
   left: 50%;
-  top: 8px;
-  width: min(92%, 560px);
-  min-height: clamp(300px, 54vh, 450px);
-  border-radius: 22px;
+  top: 14px;
+  width: min(76%, 540px);
+  min-height: clamp(300px, 54vh, 438px);
+  border-radius: 24px;
   padding: 12px;
-  background: linear-gradient(180deg, rgba(255, 253, 249, 0.96), rgba(249, 241, 233, 0.96));
+  background: linear-gradient(180deg, rgba(255, 253, 249, 0.98), rgba(247, 239, 230, 0.98));
   box-shadow: 0 14px 34px rgba(107, 79, 58, 0.12);
-  transform: translateX(calc(-50% + var(--deck-x, 0px))) translateY(var(--deck-y, 0px)) scale(var(--deck-scale, 1));
+  transform: translateX(calc(-50% + var(--deck-x, 0px))) translateY(var(--deck-y, 0px)) rotate(var(--deck-rotate, 0deg)) scale(var(--deck-scale, 1));
   opacity: var(--deck-opacity, 1);
+  transform-origin: center center;
+  will-change: transform, opacity;
 }
 
 .deck-card.is-active {
-  box-shadow: 0 18px 44px rgba(107, 79, 58, 0.18);
+  box-shadow: 0 22px 52px rgba(107, 79, 58, 0.18);
 }
 
+.deck-card.is-left,
+.deck-card.is-right {
+  cursor: pointer;
+}
+
+.deck-card.is-neighbor {
+  border-color: color-mix(in srgb, var(--brand-secondary) 28%, var(--line));
+}
 .deck-card.deck-hidden {
   opacity: 0;
   pointer-events: none;
@@ -249,26 +324,28 @@ h3 {
 
 .carousel-btn {
   position: absolute;
-  top: 46%;
+  top: 50%;
   transform: translateY(-50%);
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
-  border: 1px solid var(--line);
-  background: rgba(255, 253, 249, 0.96);
+  border: 1px solid color-mix(in srgb, var(--line) 84%, white 16%);
+  background: rgba(255, 253, 249, 0.92);
   color: var(--brand-primary);
   display: grid;
   place-items: center;
-  font-size: 1.55rem;
+  font-size: 1.4rem;
   line-height: 1;
   cursor: pointer;
-  box-shadow: 0 6px 18px rgba(107, 79, 58, 0.14);
-  transition: transform 170ms ease, opacity 170ms ease;
-  z-index: 6;
+  box-shadow: 0 10px 24px rgba(107, 79, 58, 0.14);
+  backdrop-filter: blur(8px);
+  transition: transform 170ms ease, opacity 170ms ease, box-shadow 170ms ease;
+  z-index: 20;
 }
 
 .carousel-btn:hover {
-  transform: translateY(-50%) scale(1.04);
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 14px 28px rgba(107, 79, 58, 0.18);
 }
 
 .carousel-btn:disabled {
@@ -277,11 +354,11 @@ h3 {
 }
 
 .carousel-btn.prev {
-  left: -14px;
+  left: 6px;
 }
 
 .carousel-btn.next {
-  right: -14px;
+  right: 6px;
 }
 
 .post-carousel .empty-block,
@@ -750,8 +827,59 @@ select {
 }
 
 @media (max-width: 839px) {
+  .profile-card {
+    max-width: 100%;
+    padding: 22px 18px 20px;
+    border-radius: 24px;
+  }
+
+  .avatar-wrap {
+    width: 124px;
+    height: 124px;
+  }
+
+  .profile-about {
+    max-width: 28ch;
+  }
+
+  .content-head {
+    margin-top: 18px;
+    gap: 10px;
+  }
+
+  .content-accent {
+    flex-basis: 42px;
+  }
+
+  .content-title {
+    letter-spacing: 0.1em;
+  }
+
+  .post-carousel-wrap {
+    padding-inline: 14px;
+  }
+
+  .post-carousel {
+    height: clamp(330px, 56vh, 460px);
+  }
+
+  .post-card.deck-card {
+    width: min(84%, 440px);
+    min-height: clamp(280px, 50vh, 400px);
+  }
+
   .carousel-btn {
-    display: none;
+    width: 38px;
+    height: 38px;
+    font-size: 1.2rem;
+  }
+
+  .carousel-btn.prev {
+    left: 2px;
+  }
+
+  .carousel-btn.next {
+    right: 2px;
   }
 }
 
@@ -761,17 +889,20 @@ select {
   }
 
   .profile-card {
-    max-width: 700px;
-    padding: 24px 26px;
+    max-width: 680px;
   }
 
   .avatar-wrap {
-    width: 152px;
-    height: 152px;
+    width: 144px;
+    height: 144px;
   }
 
   .profile-about {
-    max-width: 34ch;
+    max-width: 36ch;
+  }
+
+  .post-carousel-wrap {
+    padding-inline: 48px;
   }
 
   .post-carousel {
@@ -779,7 +910,15 @@ select {
   }
 
   .post-card.deck-card {
-    width: min(88%, 600px);
+    width: min(74%, 540px);
+  }
+
+  .carousel-btn.prev {
+    left: 8px;
+  }
+
+  .carousel-btn.next {
+    right: 8px;
   }
 
   .admin-grid {
@@ -795,6 +934,11 @@ select {
 @media (min-width: 1140px) {
   .container {
     width: min(980px, 100% - 24px);
+  }
+
+  .post-carousel-wrap {
+    max-width: 930px;
+    padding-inline: 56px;
   }
 }
 

@@ -1,4 +1,7 @@
-﻿import { apiFetch, escapeHtml, showToast } from './common.js';
+import { apiFetch, escapeHtml, showToast } from './common.js';
+
+const DEFAULT_ABOUT = '欢迎来到我的个人空间，这里记录我的实习、科研和兴趣探索。';
+const TAGLINE_PATTERN = /^[A-Za-z0-9 .,&+\/\-]{2,24}$/;
 
 const state = {
   items: [],
@@ -27,6 +30,29 @@ function renderAvatar(url, name) {
   avatarWrapEl.innerHTML = `<div class="avatar-fallback">${escapeHtml(fallback)}</div>`;
 }
 
+function renderProfileAbout(text) {
+  const source = (text || DEFAULT_ABOUT).trim();
+  const lines = source
+    .split(/\r?\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const normalized = lines.length ? lines : [DEFAULT_ABOUT];
+
+  return normalized
+    .map((line, index) => {
+      const classNames = ['profile-line'];
+      if (index === 0) {
+        classNames.push('is-lead');
+      }
+      if (TAGLINE_PATTERN.test(line)) {
+        classNames.push('is-tagline');
+      }
+      return `<span class="${classNames.join(' ')}">${escapeHtml(line)}</span>`;
+    })
+    .join('');
+}
+
 function renderPostCard(post, index) {
   const cover = post.coverImage?.url
     ? `<img class="post-cover" src="${escapeHtml(post.coverImage.url)}" alt="${escapeHtml(post.title)}" />`
@@ -47,6 +73,18 @@ function navigateToPost(postId) {
   window.location.href = `/post.html?postId=${encodeURIComponent(postId)}`;
 }
 
+function getDeckMetrics() {
+  if (window.innerWidth >= 1180) {
+    return { xStep: 236, yStep: 22, scaleStep: 0.11, rotateStep: 4.5 };
+  }
+
+  if (window.innerWidth >= 840) {
+    return { xStep: 190, yStep: 20, scaleStep: 0.1, rotateStep: 4 };
+  }
+
+  return { xStep: 124, yStep: 16, scaleStep: 0.09, rotateStep: 3.1 };
+}
+
 function updateDeck() {
   const cards = [...carouselEl.querySelectorAll('.deck-card')];
   if (!cards.length) {
@@ -55,10 +93,14 @@ function updateDeck() {
     return;
   }
 
+  const metrics = getDeckMetrics();
+
   for (const card of cards) {
     const index = Number(card.dataset.index);
     const offset = index - state.currentIndex;
     const absOffset = Math.abs(offset);
+
+    card.classList.remove('is-active', 'is-left', 'is-right', 'is-neighbor');
 
     if (absOffset > 3) {
       card.classList.add('deck-hidden');
@@ -67,19 +109,23 @@ function updateDeck() {
       continue;
     }
 
-    const xStep = window.innerWidth >= 840 ? 72 : 46;
-    const translateX = offset * xStep;
-    const translateY = absOffset * 16;
-    const scale = 1 - absOffset * 0.06;
-    const opacity = Math.max(0, 1 - absOffset * 0.16);
+    const translateX = offset * metrics.xStep;
+    const translateY = absOffset * metrics.yStep;
+    const scale = 1 - absOffset * metrics.scaleStep;
+    const opacity = Math.max(0.18, 1 - absOffset * 0.22);
+    const rotate = offset === 0 ? 0 : Math.sign(offset) * Math.min(absOffset * metrics.rotateStep, metrics.rotateStep + 1.2);
 
     card.classList.remove('deck-hidden');
     card.classList.toggle('is-active', offset === 0);
+    card.classList.toggle('is-left', offset < 0);
+    card.classList.toggle('is-right', offset > 0);
+    card.classList.toggle('is-neighbor', absOffset === 1);
     card.style.setProperty('--deck-x', `${translateX}px`);
     card.style.setProperty('--deck-y', `${translateY}px`);
     card.style.setProperty('--deck-scale', String(scale));
     card.style.setProperty('--deck-opacity', String(opacity));
-    card.style.zIndex = String(120 - absOffset);
+    card.style.setProperty('--deck-rotate', `${rotate}deg`);
+    card.style.zIndex = String(offset === 0 ? 140 : 120 - absOffset);
     card.tabIndex = offset === 0 ? 0 : -1;
     card.setAttribute('aria-hidden', offset === 0 ? 'false' : 'true');
   }
@@ -114,9 +160,36 @@ function goPrev() {
   goToIndex(state.currentIndex - 1);
 }
 
+function handleDeckAreaClick(event) {
+  const activeCard = carouselEl.querySelector('.deck-card.is-active');
+  if (!activeCard) return false;
+
+  const rect = activeCard.getBoundingClientRect();
+  const outerBand = Math.min(80, rect.width * 0.18);
+
+  if (event.clientX < rect.left + outerBand && state.currentIndex > 0) {
+    goPrev();
+    return true;
+  }
+
+  if (event.clientX > rect.right - outerBand && state.currentIndex < state.items.length - 1) {
+    goNext();
+    return true;
+  }
+
+  return false;
+}
+
 function bindDeckInteractions() {
-  prevBtnEl.addEventListener('click', goPrev);
-  nextBtnEl.addEventListener('click', goNext);
+  prevBtnEl.addEventListener('click', (event) => {
+    event.stopPropagation();
+    goPrev();
+  });
+
+  nextBtnEl.addEventListener('click', (event) => {
+    event.stopPropagation();
+    goNext();
+  });
 
   carouselEl.tabIndex = 0;
 
@@ -124,13 +197,20 @@ function bindDeckInteractions() {
     if (Date.now() < state.suppressClickUntil) return;
 
     const card = event.target.closest('.deck-card');
-    if (!card) return;
+    if (!card) {
+      handleDeckAreaClick(event);
+      return;
+    }
 
     const index = Number(card.dataset.index);
     if (!Number.isFinite(index)) return;
 
     if (index !== state.currentIndex) {
       goToIndex(index);
+      return;
+    }
+
+    if (handleDeckAreaClick(event)) {
       return;
     }
 
@@ -166,7 +246,9 @@ function bindDeckInteractions() {
     state.pointerStartX = event.clientX;
     state.pointerStartY = event.clientY;
 
-    carouselEl.setPointerCapture(event.pointerId);
+    if (carouselEl.setPointerCapture) {
+      carouselEl.setPointerCapture(event.pointerId);
+    }
   });
 
   carouselEl.addEventListener('pointerup', (event) => {
@@ -177,7 +259,10 @@ function bindDeckInteractions() {
 
     state.pointerDown = false;
     state.pointerId = null;
-    carouselEl.releasePointerCapture(event.pointerId);
+
+    if (carouselEl.hasPointerCapture?.(event.pointerId)) {
+      carouselEl.releasePointerCapture(event.pointerId);
+    }
 
     if (Math.abs(dx) < 45 || Math.abs(dx) <= Math.abs(dy)) return;
 
@@ -196,18 +281,19 @@ function bindDeckInteractions() {
 
     state.pointerDown = false;
     state.pointerId = null;
-    carouselEl.releasePointerCapture(event.pointerId);
+
+    if (carouselEl.hasPointerCapture?.(event.pointerId)) {
+      carouselEl.releasePointerCapture(event.pointerId);
+    }
   });
 
-  window.addEventListener('resize', () => {
-    updateDeck();
-  });
+  window.addEventListener('resize', updateDeck);
 }
 
 async function loadProfile() {
   const profile = await apiFetch('/profile');
   profileNameEl.textContent = profile.displayName || '我的主页';
-  profileAboutEl.textContent = profile.site?.aboutMd || '欢迎来到我的个人空间，这里记录我的实习、科研和兴趣探索。';
+  profileAboutEl.innerHTML = renderProfileAbout(profile.site?.aboutMd || DEFAULT_ABOUT);
   renderAvatar(profile.avatarUrl, profile.displayName);
   document.title = profile.site?.title || profile.displayName || '个人主页';
 }
