@@ -1,23 +1,16 @@
-﻿import { apiFetch, escapeHtml, formatDate, setQueryParam, showToast } from './common.js';
+﻿import { apiFetch, escapeHtml, showToast } from './common.js';
 
 const state = {
-  page: 1,
-  pageSize: 10,
-  total: 0,
-  tag: '',
+  items: [],
 };
 
 const profileNameEl = document.getElementById('profile-name');
-const profileBioEl = document.getElementById('profile-bio');
-const profileSubtitleEl = document.getElementById('profile-subtitle');
+const profileAboutEl = document.getElementById('profile-about');
 const avatarWrapEl = document.getElementById('avatar-wrap');
-const feedEl = document.getElementById('post-feed');
-const tagsScrollEl = document.getElementById('tags-scroll');
-const loadMoreEl = document.getElementById('load-more');
-const aboutDrawerEl = document.getElementById('about-drawer');
-const aboutTextEl = document.getElementById('about-text');
-const aboutOpenEl = document.getElementById('about-open');
-const aboutCloseEl = document.getElementById('about-close');
+const carouselWrapEl = document.getElementById('post-carousel-wrap');
+const carouselEl = document.getElementById('post-carousel');
+const prevBtnEl = document.getElementById('carousel-prev');
+const nextBtnEl = document.getElementById('carousel-next');
 
 function renderAvatar(url, name) {
   if (url) {
@@ -29,133 +22,111 @@ function renderAvatar(url, name) {
   avatarWrapEl.innerHTML = `<div class="avatar-fallback">${escapeHtml(fallback)}</div>`;
 }
 
-function renderTags(tags = []) {
-  const items = [{ id: '', name: '全部', slug: '' }, ...tags];
-  tagsScrollEl.innerHTML = items
-    .map((tag) => {
-      const active = state.tag === tag.slug ? 'active' : '';
-      return `<button class="tag-chip ${active}" type="button" data-tag="${escapeHtml(tag.slug)}">${escapeHtml(tag.name)}</button>`;
-    })
-    .join('');
-
-  for (const button of tagsScrollEl.querySelectorAll('.tag-chip')) {
-    button.addEventListener('click', () => {
-      state.tag = button.dataset.tag || '';
-      state.page = 1;
-      setQueryParam('tag', state.tag || null);
-      renderTags(tags);
-      loadPosts(false).catch((error) => showToast(error.message));
-    });
-  }
-}
-
 function renderPostCard(post) {
-  const tags = Array.isArray(post.tags) ? post.tags : [];
+  const cover = post.coverImage?.url
+    ? `<img class="post-cover" src="${escapeHtml(post.coverImage.url)}" alt="${escapeHtml(post.title)}" />`
+    : '<div class="post-cover cover-placeholder">内容预览</div>';
+
   return `
-    <article class="post-card" data-post-id="${post.id}">
-      ${post.coverImage?.url ? `<img class="post-cover" src="${escapeHtml(post.coverImage.url)}" alt="${escapeHtml(post.title)}" />` : ''}
-      <h2 class="post-title">${escapeHtml(post.title)}</h2>
-      <p class="post-summary">${escapeHtml(post.summary || '点击进入查看完整内容。')}</p>
-      <div class="post-meta">
-        <span>${escapeHtml(formatDate(post.publishedAt))}</span>
-        <span>${tags.slice(0, 3).map((t) => `#${t.name}`).join(' ')}</span>
+    <article class="post-card carousel-card" data-post-id="${post.id}" role="button" tabindex="0">
+      ${cover}
+      <div class="carousel-title-wrap">
+        <h3 class="post-title">${escapeHtml(post.title)}</h3>
       </div>
     </article>
   `;
 }
 
 function bindPostEvents() {
-  for (const card of feedEl.querySelectorAll('.post-card')) {
-    card.addEventListener('click', () => {
+  for (const card of carouselEl.querySelectorAll('.carousel-card')) {
+    const navigate = () => {
       const postId = card.dataset.postId;
       if (!postId) return;
       window.location.href = `/post.html?postId=${encodeURIComponent(postId)}`;
+    };
+
+    card.addEventListener('click', navigate);
+    card.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        navigate();
+      }
     });
   }
+}
+
+function updateCarouselButtons() {
+  if (!state.items.length) {
+    prevBtnEl.classList.add('hidden');
+    nextBtnEl.classList.add('hidden');
+    return;
+  }
+
+  const isScrollable = carouselEl.scrollWidth > carouselEl.clientWidth + 4;
+  if (!isScrollable) {
+    prevBtnEl.classList.add('hidden');
+    nextBtnEl.classList.add('hidden');
+    return;
+  }
+
+  prevBtnEl.classList.remove('hidden');
+  nextBtnEl.classList.remove('hidden');
+
+  const left = Math.round(carouselEl.scrollLeft);
+  const maxLeft = Math.round(carouselEl.scrollWidth - carouselEl.clientWidth);
+
+  prevBtnEl.disabled = left <= 2;
+  nextBtnEl.disabled = left >= maxLeft - 2;
+}
+
+function setupCarouselControls() {
+  const scrollByPage = (direction) => {
+    const amount = carouselEl.clientWidth * 0.86;
+    carouselEl.scrollBy({ left: amount * direction, behavior: 'smooth' });
+  };
+
+  prevBtnEl.addEventListener('click', () => scrollByPage(-1));
+  nextBtnEl.addEventListener('click', () => scrollByPage(1));
+
+  carouselEl.addEventListener('scroll', () => {
+    window.requestAnimationFrame(updateCarouselButtons);
+  });
+
+  window.addEventListener('resize', updateCarouselButtons);
 }
 
 async function loadProfile() {
   const profile = await apiFetch('/profile');
   profileNameEl.textContent = profile.displayName || '我的主页';
-  profileBioEl.textContent = profile.bio || '在这里记录生活、思考和灵感。';
-  profileSubtitleEl.textContent = profile.site?.subtitle || '';
-  aboutTextEl.textContent = profile.site?.aboutMd || '暂无介绍。';
+  profileAboutEl.textContent = profile.site?.aboutMd || '欢迎来到我的个人内容空间，这里会持续更新我的实习、科研和兴趣探索。';
   renderAvatar(profile.avatarUrl, profile.displayName);
   document.title = profile.site?.title || profile.displayName || '个人主页';
 }
 
-async function loadTags() {
-  const data = await apiFetch('/tags');
-  renderTags(data.items || []);
-}
+async function loadPosts() {
+  carouselEl.innerHTML = '<div class="loading-block">内容加载中...</div>';
 
-async function loadPosts(append) {
-  if (!append) {
-    feedEl.innerHTML = '<div class="loading-block">内容加载中...</div>';
+  const data = await apiFetch('/posts?page=1&pageSize=50');
+  state.items = data.items || [];
+
+  if (!state.items.length) {
+    carouselEl.innerHTML = '<div class="empty-block post-carousel-empty">暂时还没有内容，稍后再来看看。</div>';
+    updateCarouselButtons();
+    return;
   }
 
-  const query = new URLSearchParams({
-    page: String(state.page),
-    pageSize: String(state.pageSize),
-  });
-  if (state.tag) {
-    query.set('tag', state.tag);
-  }
-
-  const data = await apiFetch(`/posts?${query.toString()}`);
-  state.total = data.total || 0;
-
-  const listHtml = (data.items || []).map(renderPostCard).join('');
-
-  if (!append) {
-    feedEl.innerHTML = listHtml || '<div class="empty-block">暂时还没有内容，稍后再来看看。</div>';
-  } else {
-    feedEl.insertAdjacentHTML('beforeend', listHtml);
-  }
-
+  carouselEl.innerHTML = state.items.map(renderPostCard).join('');
   bindPostEvents();
-
-  const rendered = feedEl.querySelectorAll('.post-card').length;
-  const hasMore = rendered < state.total;
-  loadMoreEl.classList.toggle('hidden', !hasMore);
-}
-
-function wireDrawer() {
-  aboutOpenEl.addEventListener('click', () => {
-    aboutDrawerEl.showModal();
-  });
-  aboutCloseEl.addEventListener('click', () => aboutDrawerEl.close());
-  aboutDrawerEl.addEventListener('click', (event) => {
-    const rect = aboutDrawerEl.getBoundingClientRect();
-    const inside =
-      event.clientX >= rect.left &&
-      event.clientX <= rect.right &&
-      event.clientY >= rect.top &&
-      event.clientY <= rect.bottom;
-    if (!inside) {
-      aboutDrawerEl.close();
-    }
-  });
+  updateCarouselButtons();
 }
 
 async function boot() {
-  const initialTag = new URLSearchParams(window.location.search).get('tag');
-  if (initialTag) {
-    state.tag = initialTag;
-  }
-
-  wireDrawer();
-  loadMoreEl.addEventListener('click', async () => {
-    state.page += 1;
-    await loadPosts(true);
-  });
-
-  await Promise.all([loadProfile(), loadTags()]);
-  await loadPosts(false);
+  setupCarouselControls();
+  await Promise.all([loadProfile(), loadPosts()]);
 }
 
 boot().catch((error) => {
   console.error(error);
   showToast(error.message || '页面加载失败');
-  feedEl.innerHTML = '<div class="empty-block">页面加载失败，请稍后重试。</div>';
+  carouselEl.innerHTML = '<div class="empty-block post-carousel-empty">页面加载失败，请稍后重试。</div>';
 });

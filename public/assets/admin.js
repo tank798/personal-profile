@@ -12,6 +12,8 @@
 
 const LAST_LOGIN_EMAIL_KEY = 'homepage_last_login_email';
 const DASHBOARD_INIT_RETRY = 3;
+const AVATAR_CROP_SIZE = 320;
+const AVATAR_EXPORT_SIZE = 512;
 
 const loginWrapEl = document.getElementById('login-wrap');
 const loginFormEl = document.getElementById('login-form');
@@ -24,16 +26,11 @@ const logoutBtnEl = document.getElementById('logout-btn');
 
 const profileFormEl = document.getElementById('profile-form');
 const displayNameEl = document.getElementById('display-name');
-const bioEl = document.getElementById('bio');
+const aboutMdEl = document.getElementById('about-md');
 const avatarFileEl = document.getElementById('avatar-file');
 const uploadAvatarBtnEl = document.getElementById('upload-avatar-btn');
 const avatarMediaIdEl = document.getElementById('avatar-media-id');
 const avatarPreviewEl = document.getElementById('avatar-preview');
-
-const siteFormEl = document.getElementById('site-form');
-const siteTitleEl = document.getElementById('site-title');
-const siteSubtitleEl = document.getElementById('site-subtitle');
-const siteAboutEl = document.getElementById('site-about');
 
 const postFormEl = document.getElementById('post-form');
 const editingPostIdEl = document.getElementById('editing-post-id');
@@ -52,8 +49,28 @@ const resetPostBtnEl = document.getElementById('reset-post-btn');
 
 const postListEl = document.getElementById('post-list');
 
+const avatarCropDialogEl = document.getElementById('avatar-crop-dialog');
+const avatarCropCanvasEl = document.getElementById('avatar-crop-canvas');
+const avatarZoomEl = document.getElementById('avatar-zoom');
+const avatarCropCancelEl = document.getElementById('avatar-crop-cancel');
+const avatarCropConfirmEl = document.getElementById('avatar-crop-confirm');
+
+const avatarCtx = avatarCropCanvasEl?.getContext('2d');
+
 const state = {
   posts: [],
+};
+
+const cropState = {
+  image: null,
+  baseScale: 1,
+  zoom: 1,
+  drawX: 0,
+  drawY: 0,
+  dragging: false,
+  lastX: 0,
+  lastY: 0,
+  resolve: null,
 };
 
 function requireFile(inputEl) {
@@ -159,13 +176,9 @@ async function fetchMe() {
   adminTitleEl.textContent = `${me.user.displayName || '我的'} · 内容管理`;
 
   displayNameEl.value = me.user.displayName || '';
-  bioEl.value = me.user.bio || '';
+  aboutMdEl.value = me.site.aboutMd || '';
   avatarMediaIdEl.value = me.user.avatarMediaId || '';
   showPreview(avatarPreviewEl, me.user.avatarUrl || '');
-
-  siteTitleEl.value = me.site.title || '';
-  siteSubtitleEl.value = me.site.subtitle || '';
-  siteAboutEl.value = me.site.aboutMd || '';
 }
 
 function statusBadge(status) {
@@ -335,37 +348,27 @@ async function initializeDashboardWithRetry() {
 async function handleProfileSubmit(event) {
   event.preventDefault();
 
-  const payload = {
-    displayName: displayNameEl.value.trim(),
-    bio: bioEl.value.trim() || null,
-    avatarMediaId: avatarMediaIdEl.value || null,
-  };
+  const displayName = displayNameEl.value.trim();
+  const aboutMd = aboutMdEl.value.trim() || null;
 
   await apiFetch('/admin/profile', {
     method: 'PUT',
     auth: true,
-    body: payload,
+    body: {
+      displayName,
+      avatarMediaId: avatarMediaIdEl.value || null,
+    },
   });
-
-  showToast('资料已保存');
-}
-
-async function handleSiteSubmit(event) {
-  event.preventDefault();
-
-  const payload = {
-    title: siteTitleEl.value.trim(),
-    subtitle: siteSubtitleEl.value.trim() || null,
-    aboutMd: siteAboutEl.value.trim() || null,
-  };
 
   await apiFetch('/admin/site', {
     method: 'PUT',
     auth: true,
-    body: payload,
+    body: {
+      aboutMd,
+    },
   });
 
-  showToast('站点信息已保存');
+  showToast('个人信息已保存');
 }
 
 async function handlePostSubmit(event) {
@@ -403,12 +406,147 @@ async function handlePostSubmit(event) {
   await loadPosts();
 }
 
+function createImageFromDataUrl(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('头像读取失败，请更换图片重试'));
+    image.src = dataUrl;
+  });
+}
+
+function getDrawSize() {
+  const image = cropState.image;
+  const scale = cropState.baseScale * cropState.zoom;
+  return {
+    width: image.naturalWidth * scale,
+    height: image.naturalHeight * scale,
+  };
+}
+
+function clampCropPosition() {
+  if (!cropState.image) return;
+
+  const { width, height } = getDrawSize();
+  const minX = AVATAR_CROP_SIZE - width;
+  const minY = AVATAR_CROP_SIZE - height;
+
+  cropState.drawX = Math.min(0, Math.max(minX, cropState.drawX));
+  cropState.drawY = Math.min(0, Math.max(minY, cropState.drawY));
+}
+
+function renderAvatarCropCanvas() {
+  if (!avatarCtx) return;
+
+  avatarCtx.clearRect(0, 0, AVATAR_CROP_SIZE, AVATAR_CROP_SIZE);
+  avatarCtx.fillStyle = '#f3e9dc';
+  avatarCtx.fillRect(0, 0, AVATAR_CROP_SIZE, AVATAR_CROP_SIZE);
+
+  if (!cropState.image) return;
+
+  const { width, height } = getDrawSize();
+
+  avatarCtx.drawImage(cropState.image, cropState.drawX, cropState.drawY, width, height);
+
+  const radius = AVATAR_CROP_SIZE / 2 - 6;
+  avatarCtx.fillStyle = 'rgba(44, 30, 20, 0.38)';
+  avatarCtx.beginPath();
+  avatarCtx.rect(0, 0, AVATAR_CROP_SIZE, AVATAR_CROP_SIZE);
+  avatarCtx.moveTo(AVATAR_CROP_SIZE / 2 + radius, AVATAR_CROP_SIZE / 2);
+  avatarCtx.arc(AVATAR_CROP_SIZE / 2, AVATAR_CROP_SIZE / 2, radius, 0, Math.PI * 2, true);
+  avatarCtx.fill('evenodd');
+
+  avatarCtx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+  avatarCtx.lineWidth = 2;
+  avatarCtx.beginPath();
+  avatarCtx.arc(AVATAR_CROP_SIZE / 2, AVATAR_CROP_SIZE / 2, radius, 0, Math.PI * 2);
+  avatarCtx.stroke();
+}
+
+function finalizeCrop(file) {
+  if (typeof cropState.resolve === 'function') {
+    cropState.resolve(file);
+    cropState.resolve = null;
+  }
+}
+
+function closeCropDialog(file = null) {
+  cropState.dragging = false;
+  cropState.image = null;
+  if (avatarCropDialogEl.open) {
+    avatarCropDialogEl.close();
+  }
+  finalizeCrop(file);
+}
+
+async function exportCroppedAvatarFile() {
+  const exportCanvas = document.createElement('canvas');
+  exportCanvas.width = AVATAR_EXPORT_SIZE;
+  exportCanvas.height = AVATAR_EXPORT_SIZE;
+  const ctx = exportCanvas.getContext('2d');
+
+  const scaleRatio = AVATAR_EXPORT_SIZE / AVATAR_CROP_SIZE;
+  const { width, height } = getDrawSize();
+
+  ctx.drawImage(
+    cropState.image,
+    cropState.drawX * scaleRatio,
+    cropState.drawY * scaleRatio,
+    width * scaleRatio,
+    height * scaleRatio
+  );
+
+  const blob = await new Promise((resolve, reject) => {
+    exportCanvas.toBlob((value) => {
+      if (!value) {
+        reject(new Error('头像裁剪失败'));
+        return;
+      }
+      resolve(value);
+    }, 'image/png', 0.96);
+  });
+
+  return new File([blob], `avatar-${Date.now()}.png`, {
+    type: 'image/png',
+  });
+}
+
+async function pickCroppedAvatar(file) {
+  if (!avatarCropDialogEl?.showModal || !avatarCtx) {
+    return file;
+  }
+
+  const dataUrl = await readFileAsDataUrl(file);
+  const image = await createImageFromDataUrl(dataUrl);
+
+  cropState.image = image;
+  cropState.baseScale = Math.max(AVATAR_CROP_SIZE / image.naturalWidth, AVATAR_CROP_SIZE / image.naturalHeight);
+  cropState.zoom = 1;
+
+  const drawWidth = image.naturalWidth * cropState.baseScale;
+  const drawHeight = image.naturalHeight * cropState.baseScale;
+  cropState.drawX = (AVATAR_CROP_SIZE - drawWidth) / 2;
+  cropState.drawY = (AVATAR_CROP_SIZE - drawHeight) / 2;
+
+  avatarZoomEl.value = '1';
+  renderAvatarCropCanvas();
+
+  avatarCropDialogEl.showModal();
+
+  return new Promise((resolve) => {
+    cropState.resolve = resolve;
+  });
+}
+
 async function handleAvatarUpload() {
   const file = requireFile(avatarFileEl);
-  const media = await uploadMedia(file, 'avatar');
+  const processedFile = await pickCroppedAvatar(file);
+  if (!processedFile) return;
+
+  const media = await uploadMedia(processedFile, 'avatar');
   avatarMediaIdEl.value = media.id;
   showPreview(avatarPreviewEl, media.url);
-  showToast('头像上传完成，请点击“保存资料”');
+  showToast('头像上传完成，请点击“保存个人信息”');
 }
 
 async function handleCoverUpload() {
@@ -417,6 +555,93 @@ async function handleCoverUpload() {
   coverMediaIdEl.value = media.id;
   showPreview(coverPreviewEl, media.url);
   showToast('封面上传完成，保存帖子后生效');
+}
+
+function wireCropEvents() {
+  if (!avatarCtx) return;
+
+  avatarZoomEl.addEventListener('input', () => {
+    if (!cropState.image) return;
+
+    const previousZoom = cropState.zoom;
+    cropState.zoom = Number.parseFloat(avatarZoomEl.value || '1');
+
+    const previousScale = cropState.baseScale * previousZoom;
+    const nextScale = cropState.baseScale * cropState.zoom;
+
+    const centerX = AVATAR_CROP_SIZE / 2;
+    const centerY = AVATAR_CROP_SIZE / 2;
+    const imagePointX = (centerX - cropState.drawX) / previousScale;
+    const imagePointY = (centerY - cropState.drawY) / previousScale;
+
+    cropState.drawX = centerX - imagePointX * nextScale;
+    cropState.drawY = centerY - imagePointY * nextScale;
+
+    clampCropPosition();
+    renderAvatarCropCanvas();
+  });
+
+  avatarCropCanvasEl.addEventListener('pointerdown', (event) => {
+    if (!cropState.image) return;
+    cropState.dragging = true;
+    cropState.lastX = event.clientX;
+    cropState.lastY = event.clientY;
+    avatarCropCanvasEl.setPointerCapture(event.pointerId);
+  });
+
+  avatarCropCanvasEl.addEventListener('pointermove', (event) => {
+    if (!cropState.dragging) return;
+
+    const dx = event.clientX - cropState.lastX;
+    const dy = event.clientY - cropState.lastY;
+    cropState.lastX = event.clientX;
+    cropState.lastY = event.clientY;
+
+    cropState.drawX += dx;
+    cropState.drawY += dy;
+
+    clampCropPosition();
+    renderAvatarCropCanvas();
+  });
+
+  const stopDrag = (event) => {
+    cropState.dragging = false;
+    if (event?.pointerId !== undefined) {
+      avatarCropCanvasEl.releasePointerCapture(event.pointerId);
+    }
+  };
+
+  avatarCropCanvasEl.addEventListener('pointerup', stopDrag);
+  avatarCropCanvasEl.addEventListener('pointercancel', stopDrag);
+
+  avatarCropCancelEl.addEventListener('click', () => closeCropDialog(null));
+  avatarCropConfirmEl.addEventListener('click', async () => {
+    try {
+      const cropped = await exportCroppedAvatarFile();
+      closeCropDialog(cropped);
+    } catch (error) {
+      showToast(error.message || '裁剪失败');
+    }
+  });
+
+  avatarCropDialogEl.addEventListener('click', (event) => {
+    const rect = avatarCropDialogEl.getBoundingClientRect();
+    const inside =
+      event.clientX >= rect.left &&
+      event.clientX <= rect.right &&
+      event.clientY >= rect.top &&
+      event.clientY <= rect.bottom;
+
+    if (!inside) {
+      closeCropDialog(null);
+    }
+  });
+
+  avatarCropDialogEl.addEventListener('close', () => {
+    if (cropState.resolve) {
+      finalizeCrop(null);
+    }
+  });
 }
 
 function wireEvents() {
@@ -433,10 +658,6 @@ function wireEvents() {
 
   profileFormEl.addEventListener('submit', (event) => {
     handleProfileSubmit(event).catch((error) => showToast(error.message || '保存失败'));
-  });
-
-  siteFormEl.addEventListener('submit', (event) => {
-    handleSiteSubmit(event).catch((error) => showToast(error.message || '保存失败'));
   });
 
   postTitleEl.addEventListener('input', () => {
@@ -460,6 +681,8 @@ function wireEvents() {
   uploadCoverBtnEl.addEventListener('click', () => {
     handleCoverUpload().catch((error) => showToast(error.message || '上传失败'));
   });
+
+  wireCropEvents();
 }
 
 async function boot() {

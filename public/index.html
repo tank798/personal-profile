@@ -15,44 +15,28 @@
           <div class="avatar-wrap" id="avatar-wrap">
             <div class="avatar-fallback">我</div>
           </div>
-          <div>
+          <div class="profile-main">
             <h1 class="profile-name" id="profile-name">正在加载...</h1>
-            <p class="profile-subtitle" id="profile-subtitle"></p>
-            <p class="profile-bio" id="profile-bio"></p>
-            <div class="hero-actions">
-              <button class="btn btn-primary" type="button" id="about-open">关于我</button>
-            </div>
+            <p class="profile-about" id="profile-about">正在加载关于我...</p>
           </div>
         </article>
       </header>
 
       <main class="container">
-        <section class="feed-head">
-          <div class="tags-scroll" id="tags-scroll"></div>
+        <section class="content-head">
+          <h2 class="content-title">更多关于我的信息</h2>
         </section>
 
-        <section class="post-feed" id="post-feed">
-          <div class="loading-block">内容加载中...</div>
+        <section class="post-carousel-wrap" id="post-carousel-wrap">
+          <button class="carousel-btn prev hidden" id="carousel-prev" type="button" aria-label="上一条">‹</button>
+          <div class="post-carousel" id="post-carousel">
+            <div class="loading-block">内容加载中...</div>
+          </div>
+          <button class="carousel-btn next hidden" id="carousel-next" type="button" aria-label="下一条">›</button>
         </section>
-
-        <div class="load-more-wrap">
-          <button class="btn btn-secondary hidden" id="load-more" type="button">加载更多</button>
-        </div>
       </main>
     </div>
-
-    <dialog id="about-drawer" class="about-drawer">
-      <div class="drawer-handle"></div>
-      <div class="about-content">
-        <h3>关于我</h3>
-        <p id="about-text">暂无介绍。</p>
-        <div class="form-actions">
-          <button class="btn btn-primary" type="button" id="about-close">关闭</button>
-        </div>
-      </div>
-    </dialog>
 
     <script type="module" src="/assets/index.js"></script>
   </body>
 </html>
-
