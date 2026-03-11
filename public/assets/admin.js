@@ -1,4 +1,4 @@
-﻿import {
+import {
   apiFetch,
   escapeHtml,
   formatDateTime,
@@ -39,9 +39,10 @@ const postSlugEl = document.getElementById('post-slug');
 const postSummaryEl = document.getElementById('post-summary');
 const postContentEl = document.getElementById('post-content');
 const coverFileEl = document.getElementById('cover-file');
-const uploadCoverBtnEl = document.getElementById('upload-cover-btn');
 const coverMediaIdEl = document.getElementById('cover-media-id');
 const coverPreviewEl = document.getElementById('cover-preview');
+const postImagesFileEl = document.getElementById('post-images-file');
+const postImagesPreviewEl = document.getElementById('post-images-preview');
 const postStatusEl = document.getElementById('post-status');
 const postPinnedEl = document.getElementById('post-pinned');
 const savePostBtnEl = document.getElementById('save-post-btn');
@@ -59,6 +60,9 @@ const avatarCtx = avatarCropCanvasEl?.getContext('2d');
 
 const state = {
   posts: [],
+  postImages: [],
+  isUploadingCover: false,
+  isUploadingPostImages: false,
 };
 
 const cropState = {
@@ -89,6 +93,40 @@ function showPreview(el, url) {
   }
   el.src = url;
   el.classList.remove('hidden');
+}
+
+function dedupeMediaList(items) {
+  const map = new Map();
+  for (const item of items || []) {
+    if (!item?.id) continue;
+    if (!map.has(item.id)) {
+      map.set(item.id, item);
+    }
+  }
+  return [...map.values()];
+}
+
+function renderPostImagesPreview() {
+  if (!state.postImages.length) {
+    postImagesPreviewEl.innerHTML = '<div class="hint">当前还没有上传帖子图片。</div>';
+    return;
+  }
+
+  postImagesPreviewEl.innerHTML = state.postImages
+    .map(
+      (media) => `
+      <article class="upload-multi-item" data-media-id="${media.id}">
+        <img src="${escapeHtml(media.url)}" alt="帖子图片" />
+        <button class="btn btn-danger btn-sm" type="button" data-action="remove-image">删除</button>
+      </article>
+    `
+    )
+    .join('');
+}
+
+function setPostImages(items) {
+  state.postImages = dedupeMediaList(items);
+  renderPostImagesPreview();
 }
 
 function getLastLoginEmail() {
@@ -227,7 +265,8 @@ function renderPostList() {
 
       try {
         if (action === 'edit') {
-          fillPostForm(post);
+          const detail = await apiFetch(`/admin/posts/${postId}`, { auth: true });
+          fillPostForm(detail);
           window.scrollTo({ top: 0, behavior: 'smooth' });
           return;
         }
@@ -280,6 +319,7 @@ function fillPostForm(post) {
   postPinnedEl.value = String(Boolean(post.isPinned));
   coverMediaIdEl.value = post.coverMediaId || '';
   showPreview(coverPreviewEl, post.coverImage?.url || '');
+  setPostImages(post.images || []);
   savePostBtnEl.textContent = '更新帖子';
 }
 
@@ -290,6 +330,9 @@ function resetPostForm() {
   postPinnedEl.value = 'false';
   coverMediaIdEl.value = '';
   showPreview(coverPreviewEl, '');
+  setPostImages([]);
+  if (coverFileEl) coverFileEl.value = '';
+  if (postImagesFileEl) postImagesFileEl.value = '';
   savePostBtnEl.textContent = '保存帖子';
 }
 
@@ -374,12 +417,17 @@ async function handleProfileSubmit(event) {
 async function handlePostSubmit(event) {
   event.preventDefault();
 
+  if (state.isUploadingCover || state.isUploadingPostImages) {
+    throw new Error('图片仍在上传中，请稍后再保存帖子');
+  }
+
   const payload = {
     title: postTitleEl.value.trim(),
     slug: postSlugEl.value.trim(),
     summary: postSummaryEl.value.trim() || undefined,
     contentMd: postContentEl.value,
     coverMediaId: coverMediaIdEl.value || null,
+    imageMediaIds: state.postImages.map((item) => item.id),
     status: postStatusEl.value,
     isPinned: postPinnedEl.value === 'true',
   };
@@ -551,10 +599,46 @@ async function handleAvatarUpload() {
 
 async function handleCoverUpload() {
   const file = requireFile(coverFileEl);
-  const media = await uploadMedia(file, 'cover');
-  coverMediaIdEl.value = media.id;
-  showPreview(coverPreviewEl, media.url);
-  showToast('封面上传完成，保存帖子后生效');
+
+  state.isUploadingCover = true;
+  coverFileEl.disabled = true;
+
+  try {
+    const media = await uploadMedia(file, 'cover');
+    coverMediaIdEl.value = media.id;
+    showPreview(coverPreviewEl, media.url);
+    showToast('封面已自动上传，保存帖子后生效');
+  } finally {
+    state.isUploadingCover = false;
+    coverFileEl.disabled = false;
+    coverFileEl.value = '';
+  }
+}
+
+async function handlePostImagesUpload() {
+  const files = Array.from(postImagesFileEl.files || []);
+  if (!files.length) {
+    return;
+  }
+
+  state.isUploadingPostImages = true;
+  postImagesFileEl.disabled = true;
+
+  const uploadedItems = [];
+
+  try {
+    for (const file of files) {
+      const media = await uploadMedia(file, 'post');
+      uploadedItems.push(media);
+    }
+
+    setPostImages([...state.postImages, ...uploadedItems]);
+    showToast(`已自动上传${uploadedItems.length}张图片，保存帖子后生效`);
+  } finally {
+    state.isUploadingPostImages = false;
+    postImagesFileEl.disabled = false;
+    postImagesFileEl.value = '';
+  }
 }
 
 function wireCropEvents() {
@@ -678,8 +762,23 @@ function wireEvents() {
     handleAvatarUpload().catch((error) => showToast(error.message || '上传失败'));
   });
 
-  uploadCoverBtnEl.addEventListener('click', () => {
+  coverFileEl.addEventListener('change', () => {
     handleCoverUpload().catch((error) => showToast(error.message || '上传失败'));
+  });
+
+  postImagesFileEl.addEventListener('change', () => {
+    handlePostImagesUpload().catch((error) => showToast(error.message || '上传失败'));
+  });
+
+  postImagesPreviewEl.addEventListener('click', (event) => {
+    const trigger = event.target?.closest('[data-action="remove-image"]');
+    if (!trigger) return;
+
+    const card = trigger.closest('[data-media-id]');
+    const mediaId = card?.dataset?.mediaId;
+    if (!mediaId) return;
+
+    setPostImages(state.postImages.filter((item) => item.id !== mediaId));
   });
 
   wireCropEvents();
@@ -687,6 +786,7 @@ function wireEvents() {
 
 async function boot() {
   wireEvents();
+  setPostImages([]);
 
   const rememberedEmail = getLastLoginEmail();
   if (rememberedEmail) {

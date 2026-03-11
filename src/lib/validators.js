@@ -1,4 +1,4 @@
-﻿import { z } from 'zod';
+import { z } from 'zod';
 import { badRequest } from './errors.js';
 
 export const uuidSchema = z.string().uuid();
@@ -31,6 +31,7 @@ export const createPostSchema = z.object({
   summary: z.string().max(300).optional(),
   contentMd: z.string().min(1),
   coverMediaId: uuidSchema.nullable().optional(),
+  imageMediaIds: z.array(uuidSchema).max(30).optional(),
   tagIds: z.array(uuidSchema).optional(),
   isPinned: z.boolean().optional(),
   status: postStatusSchema.optional(),
@@ -42,6 +43,7 @@ export const updatePostSchema = z.object({
   summary: z.string().max(300).nullable().optional(),
   contentMd: z.string().min(1).optional(),
   coverMediaId: uuidSchema.nullable().optional(),
+  imageMediaIds: z.array(uuidSchema).max(30).optional(),
   tagIds: z.array(uuidSchema).optional(),
   isPinned: z.boolean().optional(),
   status: postStatusSchema.optional(),

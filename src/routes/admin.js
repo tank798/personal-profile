@@ -1,4 +1,4 @@
-﻿import { Router } from 'express';
+import { Router } from 'express';
 import { authRequired } from '../lib/auth.js';
 import { query, withTransaction } from '../lib/db.js';
 import { asyncHandler, badRequest, notFound } from '../lib/errors.js';
@@ -10,6 +10,7 @@ import {
   getPostImages,
   getPostTags,
   getTagsByIdsForSite,
+  replacePostImages,
   replacePostTags,
 } from '../lib/repositories.js';
 import {
@@ -157,6 +158,12 @@ adminRouter.post(
       await ensureMediaOwnedByUser(input.coverMediaId, req.user.id);
     }
 
+    if (input.imageMediaIds?.length) {
+      for (const mediaId of input.imageMediaIds) {
+        await ensureMediaOwnedByUser(mediaId, req.user.id);
+      }
+    }
+
     if (input.tagIds?.length) {
       await getTagsByIdsForSite(current.site_id, input.tagIds);
     }
@@ -200,12 +207,17 @@ adminRouter.post(
         await replacePostTags(insertResult.rows[0].id, input.tagIds, client);
       }
 
+      if (Object.hasOwn(input, 'imageMediaIds')) {
+        await replacePostImages(insertResult.rows[0].id, input.imageMediaIds ?? [], client);
+      }
+
       return insertResult.rows[0];
     });
 
-    const [tagMap, coverMap] = await Promise.all([
+    const [tagMap, coverMap, images] = await Promise.all([
       getPostTags([post.id]),
       getCoverMediaByIds(post.cover_media_id ? [post.cover_media_id] : []),
+      getPostImages(post.id),
     ]);
 
     res.status(201).json({
@@ -218,6 +230,7 @@ adminRouter.post(
       authorUserId: post.author_user_id,
       contentMd: post.content_md,
       coverMediaId: post.cover_media_id,
+      images,
       createdAt: post.created_at,
       updatedAt: post.updated_at,
     });
@@ -335,6 +348,12 @@ adminRouter.put(
       await ensureMediaOwnedByUser(input.coverMediaId, req.user.id);
     }
 
+    if (Object.hasOwn(input, 'imageMediaIds') && input.imageMediaIds?.length) {
+      for (const mediaId of input.imageMediaIds) {
+        await ensureMediaOwnedByUser(mediaId, req.user.id);
+      }
+    }
+
     if (input.tagIds?.length) {
       await getTagsByIdsForSite(owned.site_id, input.tagIds);
     }
@@ -404,12 +423,17 @@ adminRouter.put(
         await replacePostTags(postId, input.tagIds ?? [], client);
       }
 
+      if (Object.hasOwn(input, 'imageMediaIds')) {
+        await replacePostImages(postId, input.imageMediaIds ?? [], client);
+      }
+
       return updateResult.rows[0];
     });
 
-    const [tagMap, coverMap] = await Promise.all([
+    const [tagMap, coverMap, images] = await Promise.all([
       getPostTags([post.id]),
       getCoverMediaByIds(post.cover_media_id ? [post.cover_media_id] : []),
+      getPostImages(post.id),
     ]);
 
     res.json({
@@ -422,6 +446,7 @@ adminRouter.put(
       authorUserId: post.author_user_id,
       contentMd: post.content_md,
       coverMediaId: post.cover_media_id,
+      images,
       createdAt: post.created_at,
       updatedAt: post.updated_at,
     });

@@ -1,4 +1,4 @@
-﻿import { badRequest, notFound } from './errors.js';
+import { badRequest, notFound } from './errors.js';
 import { query } from './db.js';
 import { mapMedia, mapTag } from './utils.js';
 import { env } from './env.js';
@@ -126,6 +126,22 @@ export async function replacePostTags(postId, tagIds, client) {
   }
 }
 
+
+export async function replacePostImages(postId, mediaIds, client) {
+  await client.query('DELETE FROM post_media WHERE post_id = $1', [postId]);
+
+  if (!mediaIds?.length) {
+    return;
+  }
+
+  for (let index = 0; index < mediaIds.length; index += 1) {
+    await client.query(
+      'INSERT INTO post_media (post_id, media_id, position) VALUES ($1, $2, $3)',
+      [postId, mediaIds[index], index]
+    );
+  }
+}
+
 export async function listTagsBySite(siteId) {
   const result = await query(
     `
@@ -204,4 +220,3 @@ export async function getPostImages(postId) {
 
   return result.rows.map(mapMedia);
 }
-

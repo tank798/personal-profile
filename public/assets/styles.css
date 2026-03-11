@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   --bg-page: #f6f1eb;
   --surface-card: #fffdf9;
   --brand-primary: #6b4f3a;
@@ -612,6 +612,34 @@ select {
   height: 120px;
   border-radius: 50%;
   max-height: none;
+}
+
+.upload-multi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.upload-multi-item {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px;
+  background: rgba(255, 253, 249, 0.76);
+  display: grid;
+  gap: 8px;
+}
+
+.upload-multi-item img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--line) 80%, white 20%);
+}
+
+.upload-multi-item .btn {
+  width: 100%;
 }
 
 .row-inline {

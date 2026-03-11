@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
@@ -88,13 +88,17 @@
               <textarea class="textarea" id="post-content" name="contentMd" style="min-height:180px" required></textarea>
             </div>
             <div class="form-row">
-              <label>封面图</label>
-              <div class="row-inline">
-                <input class="input" id="cover-file" type="file" accept="image/*" style="padding:8px" />
-                <button class="btn btn-secondary btn-sm" type="button" id="upload-cover-btn">上传封面</button>
-              </div>
+              <label for="cover-file">封面图（选图后自动上传）</label>
+              <input class="input" id="cover-file" type="file" accept="image/*" style="padding:8px" />
               <input id="cover-media-id" type="hidden" />
               <img class="upload-preview hidden" id="cover-preview" alt="封面预览" />
+              <div class="hint">选择图片后会自动上传，保存帖子后生效。</div>
+            </div>
+            <div class="form-row">
+              <label for="post-images-file">帖子图片（可多选，自动上传）</label>
+              <input class="input" id="post-images-file" type="file" accept="image/*" multiple style="padding:8px" />
+              <div class="hint">可一次选择多张，上传完成后可在下方删除不需要的图片。</div>
+              <div class="upload-multi-grid" id="post-images-preview"></div>
             </div>
             <div class="row-inline">
               <div class="form-row" style="margin:0; min-width:180px; flex:1">
