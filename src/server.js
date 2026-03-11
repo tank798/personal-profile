@@ -16,9 +16,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const publicDir = path.resolve(__dirname, '../public');
 
-app.use(helmet({
-  contentSecurityPolicy: false,
-}));
+let bootstrapState = 'pending';
+let bootstrapError = '';
+
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+  })
+);
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -34,7 +39,12 @@ app.use(express.json({ limit: '12mb' }));
 app.use(morgan(env.nodeEnv === 'production' ? 'combined' : 'dev'));
 
 app.get('/healthz', (req, res) => {
-  res.json({ status: 'ok', service: 'personal-homepage-api' });
+  res.json({
+    status: 'ok',
+    service: 'personal-homepage-api',
+    bootstrapState,
+    bootstrapError: bootstrapError || undefined,
+  });
 });
 
 app.use('/api/v1', authRouter);
@@ -61,18 +71,37 @@ app.use((req, res) => {
 
 app.use(errorMiddleware);
 
-async function start() {
-  await waitForDatabase();
-  await ensureSchema();
-  await ensureSingleOwner();
-
-  app.listen(env.port, () => {
-    console.log(`API running on http://localhost:${env.port}`);
-  });
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-start().catch((error) => {
-  console.error('Failed to start API', error);
-  process.exit(1);
-});
+async function bootstrapAppData() {
+  while (true) {
+    try {
+      bootstrapState = 'initializing';
+      bootstrapError = '';
 
+      await waitForDatabase(60, 2000);
+      await ensureSchema();
+      await ensureSingleOwner();
+
+      bootstrapState = 'ready';
+      console.log('Bootstrap complete');
+      return;
+    } catch (error) {
+      bootstrapState = 'retrying';
+      bootstrapError = error?.message || 'unknown bootstrap error';
+      console.error('Bootstrap failed, retrying in 10s:', error);
+      await sleep(10000);
+    }
+  }
+}
+
+app.listen(env.port, () => {
+  console.log(`API running on http://localhost:${env.port}`);
+  bootstrapAppData().catch((error) => {
+    bootstrapState = 'failed';
+    bootstrapError = error?.message || 'bootstrap failed';
+    console.error('Bootstrap fatal error:', error);
+  });
+});
