@@ -1,6 +1,13 @@
-﻿import { hashPassword } from './auth.js';
+﻿import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { hashPassword } from './auth.js';
 import { query, withTransaction } from './db.js';
 import { env } from './env.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const schemaPath = path.resolve(__dirname, '../../db/schema.sql');
 
 function defaultThemeTokens() {
   return {
@@ -12,6 +19,41 @@ function defaultThemeTokens() {
     card: '#FFFDF9',
     divider: '#E8DED2',
   };
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function waitForDatabase(maxAttempts = 20, delayMs = 2000) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      await query('SELECT 1');
+      if (attempt > 1) {
+        console.log(`Database is ready after ${attempt} attempts`);
+      }
+      return;
+    } catch (error) {
+      lastError = error;
+      console.warn(`Database not ready (attempt ${attempt}/${maxAttempts}), retrying...`);
+      await sleep(delayMs);
+    }
+  }
+
+  throw lastError;
+}
+
+export async function ensureSchema() {
+  const existsResult = await query(`SELECT to_regclass('public.users') AS users_table`);
+  if (existsResult.rows[0]?.users_table) {
+    return;
+  }
+
+  const schemaSql = await fs.readFile(schemaPath, 'utf8');
+  await query(schemaSql);
+  console.log('Database schema initialized from db/schema.sql');
 }
 
 export async function ensureSingleOwner() {

@@ -9,7 +9,7 @@ import { authRouter } from './routes/auth.js';
 import { publicRouter } from './routes/public.js';
 import { env } from './lib/env.js';
 import { errorMiddleware } from './lib/errors.js';
-import { ensureSingleOwner } from './lib/bootstrap.js';
+import { ensureSchema, ensureSingleOwner, waitForDatabase } from './lib/bootstrap.js';
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -62,6 +62,8 @@ app.use((req, res) => {
 app.use(errorMiddleware);
 
 async function start() {
+  await waitForDatabase();
+  await ensureSchema();
   await ensureSingleOwner();
 
   app.listen(env.port, () => {
@@ -73,3 +75,4 @@ start().catch((error) => {
   console.error('Failed to start API', error);
   process.exit(1);
 });
+
