@@ -1,0 +1,29 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>帖子详情</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body>
+    <div class="bg-grain"></div>
+    <div class="page-shell">
+      <main class="container post-page-head">
+        <a class="inline-back" href="/">← 返回主页</a>
+
+        <article class="post-detail" id="post-detail">
+          <div class="loading-block">加载中...</div>
+        </article>
+
+        <section class="recommend-list" id="recommend-list"></section>
+      </main>
+    </div>
+
+    <dialog class="image-viewer" id="image-viewer">
+      <img id="viewer-image" alt="图片预览" />
+    </dialog>
+
+    <script type="module" src="/assets/post.js"></script>
+  </body>
+</html>

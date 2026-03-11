@@ -1,0 +1,154 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>内容管理</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body>
+    <div class="bg-grain"></div>
+
+    <section class="login-wrap" id="login-wrap">
+      <div class="admin-card">
+        <h1 style="margin-top:0">后台登录</h1>
+        <p class="hint">仅你自己可用。登录后可以更新头像、资料和帖子。</p>
+        <form id="login-form">
+          <div class="form-row">
+            <label for="login-email">邮箱</label>
+            <input class="input" id="login-email" name="email" type="email" required autocomplete="email" />
+          </div>
+          <div class="form-row">
+            <label for="login-password">密码</label>
+            <input class="input" id="login-password" name="password" type="password" required autocomplete="current-password" />
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" type="submit">登录</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <main class="admin-shell hidden" id="admin-shell">
+      <header class="admin-head">
+        <h1 id="admin-title">内容管理</h1>
+        <div class="form-actions" style="margin-top:8px">
+          <a class="btn btn-secondary" href="/">查看主页</a>
+          <button class="btn btn-ghost" type="button" id="logout-btn">退出登录</button>
+        </div>
+      </header>
+
+      <section class="admin-grid">
+        <article class="admin-card">
+          <h2 style="margin-top:0">个人信息</h2>
+          <form id="profile-form">
+            <div class="form-row">
+              <label for="display-name">显示名称</label>
+              <input class="input" id="display-name" name="displayName" maxlength="80" required />
+            </div>
+            <div class="form-row">
+              <label for="bio">简介</label>
+              <textarea class="textarea" id="bio" name="bio" maxlength="280"></textarea>
+            </div>
+            <div class="form-row">
+              <label>头像</label>
+              <div class="row-inline">
+                <input class="input" id="avatar-file" type="file" accept="image/*" style="padding:8px" />
+                <button class="btn btn-secondary btn-sm" type="button" id="upload-avatar-btn">上传头像</button>
+              </div>
+              <input id="avatar-media-id" type="hidden" />
+              <img class="upload-preview hidden" id="avatar-preview" alt="头像预览" />
+              <div class="hint">建议 1:1 图片，大小 < 10MB。</div>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit">保存资料</button>
+            </div>
+          </form>
+        </article>
+
+        <article class="admin-card">
+          <h2 style="margin-top:0">站点信息</h2>
+          <form id="site-form">
+            <div class="form-row">
+              <label for="site-title">主页标题</label>
+              <input class="input" id="site-title" name="title" maxlength="120" required />
+            </div>
+            <div class="form-row">
+              <label for="site-subtitle">副标题</label>
+              <input class="input" id="site-subtitle" name="subtitle" maxlength="180" />
+            </div>
+            <div class="form-row">
+              <label for="site-about">关于我（展示在抽屉）</label>
+              <textarea class="textarea" id="site-about" name="aboutMd"></textarea>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit">保存站点</button>
+            </div>
+          </form>
+        </article>
+
+        <article class="admin-card full">
+          <h2 style="margin-top:0">写新帖子</h2>
+          <form id="post-form">
+            <input id="editing-post-id" type="hidden" />
+            <div class="form-row">
+              <label for="post-title">标题</label>
+              <input class="input" id="post-title" name="title" maxlength="160" required />
+            </div>
+            <div class="form-row">
+              <label for="post-slug">Slug（URL片段）</label>
+              <input class="input" id="post-slug" name="slug" maxlength="80" required />
+            </div>
+            <div class="form-row">
+              <label for="post-summary">摘要</label>
+              <textarea class="textarea" id="post-summary" name="summary" maxlength="300"></textarea>
+            </div>
+            <div class="form-row">
+              <label for="post-content">正文（Markdown）</label>
+              <textarea class="textarea" id="post-content" name="contentMd" style="min-height:180px" required></textarea>
+            </div>
+            <div class="form-row">
+              <label>封面图</label>
+              <div class="row-inline">
+                <input class="input" id="cover-file" type="file" accept="image/*" style="padding:8px" />
+                <button class="btn btn-secondary btn-sm" type="button" id="upload-cover-btn">上传封面</button>
+              </div>
+              <input id="cover-media-id" type="hidden" />
+              <img class="upload-preview hidden" id="cover-preview" alt="封面预览" />
+            </div>
+            <div class="row-inline">
+              <div class="form-row" style="margin:0; min-width:180px; flex:1">
+                <label for="post-status">状态</label>
+                <select class="select" id="post-status" name="status">
+                  <option value="draft">草稿</option>
+                  <option value="published">发布</option>
+                  <option value="archived">归档</option>
+                </select>
+              </div>
+              <div class="form-row" style="margin:0; min-width:120px">
+                <label for="post-pinned">置顶</label>
+                <select class="select" id="post-pinned" name="isPinned">
+                  <option value="false">否</option>
+                  <option value="true">是</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit" id="save-post-btn">保存帖子</button>
+              <button class="btn btn-ghost" type="button" id="reset-post-btn">清空表单</button>
+            </div>
+          </form>
+        </article>
+
+        <article class="admin-card full">
+          <h2 style="margin-top:0">帖子列表</h2>
+          <div class="admin-post-list" id="post-list">
+            <div class="loading-block">加载中...</div>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <script type="module" src="/assets/admin.js"></script>
+  </body>
+</html>

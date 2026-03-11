@@ -1,0 +1,932 @@
+﻿openapi: 3.0.3
+info:
+  title: Personal Homepage API (Single Owner)
+  version: 0.2.0
+  description: |
+    Single-owner backend API for a personal homepage website.
+    - No public registration
+    - One admin account (configured by environment variables)
+    - Public profile + content stream
+
+servers:
+  - url: http://localhost:8080
+    description: Local
+
+tags:
+  - name: Auth
+  - name: Public
+  - name: AdminProfile
+  - name: AdminPost
+  - name: AdminMedia
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login as single admin user
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout current session
+      operationId: logout
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/me:
+    get:
+      tags: [Auth]
+      summary: Get current user and site
+      operationId: getMe
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/profile:
+    get:
+      tags: [Public]
+      summary: Get public profile
+      operationId: getPublicProfile
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicProfileResponse'
+
+  /api/v1/posts:
+    get:
+      tags: [Public]
+      summary: List published posts
+      operationId: listPublicPosts
+      security: []
+      parameters:
+        - in: query
+          name: tag
+          schema:
+            type: string
+            maxLength: 40
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicPostListResponse'
+
+  /api/v1/posts/{postId}:
+    get:
+      tags: [Public]
+      summary: Get published post detail
+      operationId: getPublicPostDetail
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/PostId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicPostDetailResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/tags:
+    get:
+      tags: [Public]
+      summary: Get public tags
+      operationId: listPublicTags
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Tag'
+
+  /api/v1/admin/profile:
+    put:
+      tags: [AdminProfile]
+      summary: Update profile
+      operationId: updateAdminProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/admin/site:
+    put:
+      tags: [AdminProfile]
+      summary: Update site metadata
+      operationId: updateAdminSite
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSiteRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Site'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/admin/posts:
+    post:
+      tags: [AdminPost]
+      summary: Create a post
+      operationId: createAdminPost
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePostRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPostResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    get:
+      tags: [AdminPost]
+      summary: List own posts
+      operationId: listAdminPosts
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/PostStatus'
+        - in: query
+          name: keyword
+          schema:
+            type: string
+            maxLength: 80
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPostListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/admin/posts/{postId}:
+    get:
+      tags: [AdminPost]
+      summary: Get post detail
+      operationId: getAdminPost
+      parameters:
+        - $ref: '#/components/parameters/PostId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPostResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [AdminPost]
+      summary: Update post
+      operationId: updateAdminPost
+      parameters:
+        - $ref: '#/components/parameters/PostId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePostRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPostResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [AdminPost]
+      summary: Delete post
+      operationId: deleteAdminPost
+      parameters:
+        - $ref: '#/components/parameters/PostId'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/admin/posts/{postId}/publish:
+    post:
+      tags: [AdminPost]
+      summary: Publish post
+      operationId: publishAdminPost
+      parameters:
+        - $ref: '#/components/parameters/PostId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                publishedAt:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPostResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/admin/posts/{postId}/unpublish:
+    post:
+      tags: [AdminPost]
+      summary: Unpublish post
+      operationId: unpublishAdminPost
+      parameters:
+        - $ref: '#/components/parameters/PostId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPostResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/admin/media/upload-url:
+    post:
+      tags: [AdminMedia]
+      summary: Create signed upload URL
+      operationId: createUploadUrl
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUploadUrlRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUploadUrlResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/admin/media/complete:
+    post:
+      tags: [AdminMedia]
+      summary: Persist uploaded file metadata
+      operationId: completeUpload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteUploadRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/admin/media:
+    get:
+      tags: [AdminMedia]
+      summary: List media library
+      operationId: listAdminMedia
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - in: query
+          name: purpose
+          schema:
+            $ref: '#/components/schemas/MediaPurpose'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    PostId:
+      in: path
+      name: postId
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Page:
+      in: query
+      name: page
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      in: query
+      name: pageSize
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 10
+
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    PostStatus:
+      type: string
+      enum: [draft, published, archived]
+
+    MediaPurpose:
+      type: string
+      enum: [avatar, cover, post, site]
+
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+
+    UserBrief:
+      type: object
+      required: [id, email, username, displayName]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        displayName:
+          type: string
+        bio:
+          type: string
+          nullable: true
+        avatarUrl:
+          type: string
+          format: uri
+          nullable: true
+        avatarMediaId:
+          type: string
+          format: uuid
+          nullable: true
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+          maxLength: 64
+
+    AuthResponse:
+      type: object
+      required: [accessToken, expiresIn, user]
+      properties:
+        accessToken:
+          type: string
+        expiresIn:
+          type: integer
+        user:
+          $ref: '#/components/schemas/UserBrief'
+
+    Site:
+      type: object
+      required: [id, slug, title, theme]
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        title:
+          type: string
+        subtitle:
+          type: string
+          nullable: true
+        aboutMd:
+          type: string
+          nullable: true
+        theme:
+          type: object
+          additionalProperties: true
+
+    MeResponse:
+      type: object
+      required: [user, site]
+      properties:
+        user:
+          $ref: '#/components/schemas/UserBrief'
+        site:
+          $ref: '#/components/schemas/Site'
+
+    Tag:
+      type: object
+      required: [id, name, slug]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+
+    MediaItem:
+      type: object
+      required: [id, url, objectKey, mimeType, sizeBytes, purpose, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        url:
+          type: string
+          format: uri
+        objectKey:
+          type: string
+        mimeType:
+          type: string
+        sizeBytes:
+          type: integer
+        width:
+          type: integer
+          nullable: true
+        height:
+          type: integer
+          nullable: true
+        purpose:
+          $ref: '#/components/schemas/MediaPurpose'
+        createdAt:
+          type: string
+          format: date-time
+
+    PublicProfileResponse:
+      type: object
+      required: [username, displayName, site]
+      properties:
+        username:
+          type: string
+        displayName:
+          type: string
+        bio:
+          type: string
+          nullable: true
+        avatarUrl:
+          type: string
+          format: uri
+          nullable: true
+        site:
+          $ref: '#/components/schemas/Site'
+
+    PublicPostSummary:
+      type: object
+      required: [id, title, slug, status, isPinned]
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+          nullable: true
+        coverImage:
+          $ref: '#/components/schemas/MediaItem'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        status:
+          $ref: '#/components/schemas/PostStatus'
+        isPinned:
+          type: boolean
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    PublicPostDetailResponse:
+      allOf:
+        - $ref: '#/components/schemas/PublicPostSummary'
+        - type: object
+          required: [contentMd]
+          properties:
+            contentMd:
+              type: string
+            images:
+              type: array
+              items:
+                $ref: '#/components/schemas/MediaItem'
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+    PublicPostListResponse:
+      type: object
+      required: [items, page, pageSize, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicPostSummary'
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 80
+        bio:
+          type: string
+          maxLength: 280
+          nullable: true
+        avatarMediaId:
+          type: string
+          format: uuid
+          nullable: true
+      additionalProperties: false
+
+    UpdateSiteRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        subtitle:
+          type: string
+          maxLength: 180
+          nullable: true
+        aboutMd:
+          type: string
+          nullable: true
+        theme:
+          type: object
+          additionalProperties: true
+      additionalProperties: false
+
+    CreatePostRequest:
+      type: object
+      required: [title, slug, contentMd]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        slug:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9-]{1,78}[a-z0-9]$'
+        summary:
+          type: string
+          maxLength: 300
+        contentMd:
+          type: string
+          minLength: 1
+        coverMediaId:
+          type: string
+          format: uuid
+          nullable: true
+        tagIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        isPinned:
+          type: boolean
+          default: false
+        status:
+          $ref: '#/components/schemas/PostStatus'
+      additionalProperties: false
+
+    UpdatePostRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        slug:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9-]{1,78}[a-z0-9]$'
+        summary:
+          type: string
+          maxLength: 300
+          nullable: true
+        contentMd:
+          type: string
+          minLength: 1
+        coverMediaId:
+          type: string
+          format: uuid
+          nullable: true
+        tagIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        isPinned:
+          type: boolean
+        status:
+          $ref: '#/components/schemas/PostStatus'
+      additionalProperties: false
+
+    AdminPostResponse:
+      type: object
+      required: [id, siteId, authorUserId, slug, title, contentMd, status, isPinned, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        siteId:
+          type: string
+          format: uuid
+        authorUserId:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+          nullable: true
+        contentMd:
+          type: string
+        coverMediaId:
+          type: string
+          format: uuid
+          nullable: true
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        status:
+          $ref: '#/components/schemas/PostStatus'
+        isPinned:
+          type: boolean
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AdminPostListResponse:
+      type: object
+      required: [items, page, pageSize, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminPostResponse'
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+
+    CreateUploadUrlRequest:
+      type: object
+      required: [filename, mimeType, sizeBytes, purpose]
+      properties:
+        filename:
+          type: string
+          maxLength: 200
+        mimeType:
+          type: string
+          maxLength: 120
+        sizeBytes:
+          type: integer
+          minimum: 1
+          maximum: 10485760
+        purpose:
+          $ref: '#/components/schemas/MediaPurpose'
+      additionalProperties: false
+
+    CreateUploadUrlResponse:
+      type: object
+      required: [uploadUrl, method, objectKey, expiresAt]
+      properties:
+        uploadUrl:
+          type: string
+          format: uri
+        method:
+          type: string
+          enum: [PUT]
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        objectKey:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+
+    CompleteUploadRequest:
+      type: object
+      required: [objectKey, mimeType, sizeBytes, purpose]
+      properties:
+        objectKey:
+          type: string
+        url:
+          type: string
+          format: uri
+        mimeType:
+          type: string
+        sizeBytes:
+          type: integer
+          minimum: 1
+        width:
+          type: integer
+          minimum: 1
+          nullable: true
+        height:
+          type: integer
+          minimum: 1
+          nullable: true
+        purpose:
+          $ref: '#/components/schemas/MediaPurpose'
+      additionalProperties: false
+
+    MediaListResponse:
+      type: object
+      required: [items, page, pageSize, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MediaItem'
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+
+

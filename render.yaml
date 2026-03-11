@@ -1,0 +1,52 @@
+﻿services:
+  - type: web
+    name: personal-homepage-site
+    runtime: node
+    plan: free
+    autoDeploy: true
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: personal-homepage-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN_SECONDS
+        value: "86400"
+      - key: CORS_ORIGINS
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_DISPLAY_NAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_BIO
+        sync: false
+      - key: SITE_SLUG
+        sync: false
+      - key: SITE_TITLE
+        sync: false
+      - key: SITE_SUBTITLE
+        sync: false
+      - key: SITE_ABOUT_MD
+        sync: false
+      - key: OBJECT_STORAGE_UPLOAD_BASE_URL
+        sync: false
+      - key: OBJECT_STORAGE_PUBLIC_BASE_URL
+        sync: false
+      - key: UPLOAD_URL_TTL_SECONDS
+        value: "600"
+
+databases:
+  - name: personal-homepage-db
+    plan: free
+    databaseName: homepage_platform
+    user: homepage_user
