@@ -12,7 +12,7 @@
   --radius-md: 16px;
   --radius-sm: 11px;
   --shadow-soft: 0 14px 34px rgba(107, 79, 58, 0.09);
-  --shadow-card: 0 8px 20px rgba(107, 79, 58, 0.06);
+  --shadow-card: 0 8px 20px rgba(107, 79, 58, 0.08);
 }
 
 * {
@@ -62,7 +62,7 @@ h3 {
 }
 
 .container {
-  width: min(880px, 100% - 28px);
+  width: min(920px, 100% - 24px);
   margin-inline: auto;
 }
 
@@ -71,20 +71,23 @@ h3 {
 }
 
 .profile-card {
-  display: grid;
-  grid-template-columns: 108px minmax(0, 1fr);
-  align-items: center;
-  gap: 18px;
-  padding: 22px 18px;
+  max-width: 640px;
+  margin-inline: auto;
+  padding: 20px 22px;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--surface-card) 92%, #f3e7db 8%);
+  background: color-mix(in srgb, var(--surface-card) 94%, #f3e7db 6%);
   box-shadow: var(--shadow-soft);
+  display: grid;
+  justify-items: center;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
 }
 
 .avatar-wrap {
-  width: 108px;
-  height: 108px;
+  width: 136px;
+  height: 136px;
   border-radius: 50%;
   border: 4px solid color-mix(in srgb, var(--brand-secondary) 45%, white 55%);
   overflow: hidden;
@@ -111,56 +114,53 @@ h3 {
 .profile-main {
   display: grid;
   gap: 8px;
-  align-content: center;
+  justify-items: center;
 }
 
 .profile-name {
   margin: 0;
-  font-size: clamp(1.75rem, 7vw, 2.75rem);
-  line-height: 1.15;
+  font-size: clamp(2rem, 7.2vw, 3.8rem);
+  line-height: 1.06;
 }
 
 .profile-about {
   margin: 0;
   color: var(--text-secondary);
-  font-size: clamp(0.98rem, 3.2vw, 1.15rem);
-  line-height: 1.8;
+  font-size: clamp(1rem, 3.4vw, 1.24rem);
+  line-height: 1.78;
   white-space: pre-line;
-  max-width: 40ch;
+  max-width: 30ch;
 }
 
 .content-head {
-  margin-top: 30px;
+  margin-top: 18px;
   text-align: center;
 }
 
 .content-title {
   margin: 0;
-  font-size: clamp(1.35rem, 5.2vw, 1.95rem);
   color: color-mix(in srgb, var(--brand-primary) 92%, black 8%);
+  font-family: "STKaiti", "KaiTi", "Kaiti SC", "HanziPen SC", "Noto Serif SC", serif;
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(2rem, 8vw, 3.1rem);
+  letter-spacing: 0.1em;
+  text-shadow: 0 7px 22px rgba(107, 79, 58, 0.16);
+  transform: rotate(-0.8deg);
 }
 
 .post-carousel-wrap {
   position: relative;
-  margin-top: 14px;
+  max-width: 780px;
+  margin: 8px auto 0;
 }
 
 .post-carousel {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(280px, 84%);
-  gap: 16px;
-  padding: 8px 4px 18px;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x mandatory;
-  scroll-padding-inline: 4px;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-
-.post-carousel::-webkit-scrollbar {
-  display: none;
+  position: relative;
+  height: clamp(340px, 58vh, 500px);
+  overflow: hidden;
+  touch-action: pan-y;
+  user-select: none;
 }
 
 .post-card {
@@ -171,31 +171,35 @@ h3 {
   box-shadow: var(--shadow-card);
   display: grid;
   gap: 10px;
-  transition: transform 220ms ease, box-shadow 220ms ease;
+  transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 220ms ease, box-shadow 220ms ease;
   cursor: pointer;
 }
 
-.post-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 30px rgba(107, 79, 58, 0.15);
-}
-
-.post-card.carousel-card {
-  scroll-snap-align: center;
+.post-card.deck-card {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  width: min(92%, 560px);
+  min-height: clamp(300px, 54vh, 450px);
   border-radius: 22px;
   padding: 12px;
-  min-height: clamp(300px, 56vh, 420px);
-  background: linear-gradient(180deg, rgba(255, 253, 249, 0.95), rgba(249, 241, 233, 0.95));
-  box-shadow: 0 14px 34px rgba(107, 79, 58, 0.11);
-  align-content: start;
+  background: linear-gradient(180deg, rgba(255, 253, 249, 0.96), rgba(249, 241, 233, 0.96));
+  box-shadow: 0 14px 34px rgba(107, 79, 58, 0.12);
+  transform: translateX(calc(-50% + var(--deck-x, 0px))) translateY(var(--deck-y, 0px)) scale(var(--deck-scale, 1));
+  opacity: var(--deck-opacity, 1);
 }
 
-.post-card.carousel-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 20px 42px rgba(107, 79, 58, 0.16);
+.deck-card.is-active {
+  box-shadow: 0 18px 44px rgba(107, 79, 58, 0.18);
 }
 
-.carousel-card .post-cover {
+.deck-card.deck-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.carousel-card .post-cover,
+.deck-card .post-cover {
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: cover;
@@ -204,17 +208,13 @@ h3 {
 }
 
 .carousel-title-wrap {
-  padding: 2px 6px 6px;
+  padding: 4px 8px 8px;
 }
 
 .post-title {
   margin: 0;
-  font-size: 1.08rem;
-  line-height: 1.38;
-}
-
-.carousel-card .post-title {
-  font-size: clamp(1.12rem, 4.2vw, 1.36rem);
+  line-height: 1.4;
+  font-size: clamp(1.14rem, 4.2vw, 1.42rem);
 }
 
 .post-summary {
@@ -249,13 +249,13 @@ h3 {
 
 .carousel-btn {
   position: absolute;
-  top: calc(50% - 8px);
+  top: 46%;
   transform: translateY(-50%);
   width: 44px;
   height: 44px;
   border-radius: 50%;
   border: 1px solid var(--line);
-  background: rgba(255, 253, 249, 0.94);
+  background: rgba(255, 253, 249, 0.96);
   color: var(--brand-primary);
   display: grid;
   place-items: center;
@@ -264,7 +264,7 @@ h3 {
   cursor: pointer;
   box-shadow: 0 6px 18px rgba(107, 79, 58, 0.14);
   transition: transform 170ms ease, opacity 170ms ease;
-  z-index: 4;
+  z-index: 6;
 }
 
 .carousel-btn:hover {
@@ -277,20 +277,21 @@ h3 {
 }
 
 .carousel-btn.prev {
-  left: -12px;
+  left: -14px;
 }
 
 .carousel-btn.next {
-  right: -12px;
+  right: -14px;
 }
 
 .post-carousel .empty-block,
 .post-carousel .loading-block {
-  min-width: min(100%, 760px);
+  width: min(100%, 760px);
+  margin: 0 auto;
 }
 
 .post-carousel-empty {
-  min-height: 190px;
+  min-height: 200px;
   display: grid;
   place-items: center;
 }
@@ -727,22 +728,30 @@ select {
 }
 
 @media (min-width: 840px) {
+  .profile-hero {
+    padding-top: 28px;
+  }
+
   .profile-card {
-    grid-template-columns: 126px minmax(0, 1fr);
-    gap: 22px;
-    padding: 24px 24px;
+    max-width: 700px;
+    padding: 24px 26px;
   }
 
   .avatar-wrap {
-    width: 126px;
-    height: 126px;
+    width: 152px;
+    height: 152px;
+  }
+
+  .profile-about {
+    max-width: 34ch;
   }
 
   .post-carousel {
-    grid-auto-columns: minmax(360px, 74%);
-    gap: 20px;
-    padding-inline: 10px;
-    scroll-padding-inline: 10px;
+    height: clamp(380px, 62vh, 560px);
+  }
+
+  .post-card.deck-card {
+    width: min(88%, 600px);
   }
 
   .admin-grid {
@@ -756,8 +765,8 @@ select {
 }
 
 @media (min-width: 1140px) {
-  .post-carousel {
-    grid-auto-columns: minmax(390px, 46%);
+  .container {
+    width: min(980px, 100% - 24px);
   }
 }
 
