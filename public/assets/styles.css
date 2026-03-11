@@ -132,7 +132,7 @@ h3 {
   margin: 0;
   display: grid;
   gap: 0.48rem;
-  max-width: 34ch;
+  max-width: min(100%, 31rem);
 }
 
 .profile-line {
@@ -908,7 +908,12 @@ select {
   }
 
   .profile-about {
-    max-width: 36ch;
+    max-width: none;
+    width: auto;
+  }
+
+  .profile-line {
+    white-space: nowrap;
   }
 
   .post-carousel-wrap {

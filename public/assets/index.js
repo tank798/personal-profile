@@ -1,6 +1,6 @@
 import { apiFetch, escapeHtml, showToast } from './common.js';
 
-const DEFAULT_ABOUT = '欢迎来到我的个人空间，这里记录我的实习、科研和兴趣探索。';
+const DEFAULT_ABOUT = '\u6b22\u8fce\u6765\u5230\u6211\u7684\u4e2a\u4eba\u7a7a\u95f4\uff0c\u8fd9\u91cc\u8bb0\u5f55\u6211\u7684\u5b9e\u4e60\u3001\u79d1\u7814\u548c\u5174\u8da3\u63a2\u7d22\u3002';
 const TAGLINE_PATTERN = /^[A-Za-z0-9 .,&+\/\-]{2,24}$/;
 
 const state = {
@@ -26,7 +26,7 @@ function renderAvatar(url, name) {
     return;
   }
 
-  const fallback = (name || '我').slice(0, 1);
+  const fallback = (name || '\u6211').slice(0, 1);
   avatarWrapEl.innerHTML = `<div class="avatar-fallback">${escapeHtml(fallback)}</div>`;
 }
 
@@ -56,7 +56,7 @@ function renderProfileAbout(text) {
 function renderPostCard(post, index) {
   const cover = post.coverImage?.url
     ? `<img class="post-cover" src="${escapeHtml(post.coverImage.url)}" alt="${escapeHtml(post.title)}" />`
-    : '<div class="post-cover cover-placeholder">内容预览</div>';
+    : '<div class="post-cover cover-placeholder">\u5185\u5bb9\u9884\u89c8</div>';
 
   return `
     <article class="post-card deck-card" data-index="${index}" data-post-id="${post.id}" role="button" tabindex="-1">
@@ -85,6 +85,12 @@ function getDeckMetrics() {
   return { xStep: 124, yStep: 16, scaleStep: 0.09, rotateStep: 3.1 };
 }
 
+function getLoopOffset(index, activeIndex, count) {
+  const forward = (index - activeIndex + count) % count;
+  const backward = forward - count;
+  return Math.abs(forward) <= Math.abs(backward) ? forward : backward;
+}
+
 function updateDeck() {
   const cards = [...carouselEl.querySelectorAll('.deck-card')];
   if (!cards.length) {
@@ -97,7 +103,7 @@ function updateDeck() {
 
   for (const card of cards) {
     const index = Number(card.dataset.index);
-    const offset = index - state.currentIndex;
+    const offset = getLoopOffset(index, state.currentIndex, cards.length);
     const absOffset = Math.abs(offset);
 
     card.classList.remove('is-active', 'is-left', 'is-right', 'is-neighbor');
@@ -138,17 +144,18 @@ function updateDeck() {
 
   prevBtnEl.classList.remove('hidden');
   nextBtnEl.classList.remove('hidden');
-  prevBtnEl.disabled = state.currentIndex <= 0;
-  nextBtnEl.disabled = state.currentIndex >= cards.length - 1;
+  prevBtnEl.disabled = false;
+  nextBtnEl.disabled = false;
 }
 
 function goToIndex(nextIndex) {
   if (!state.items.length) return;
 
-  const clamped = Math.max(0, Math.min(state.items.length - 1, nextIndex));
-  if (clamped === state.currentIndex) return;
+  const total = state.items.length;
+  const normalized = ((nextIndex % total) + total) % total;
+  if (normalized === state.currentIndex) return;
 
-  state.currentIndex = clamped;
+  state.currentIndex = normalized;
   updateDeck();
 }
 
@@ -167,12 +174,12 @@ function handleDeckAreaClick(event) {
   const rect = activeCard.getBoundingClientRect();
   const outerBand = Math.min(80, rect.width * 0.18);
 
-  if (event.clientX < rect.left + outerBand && state.currentIndex > 0) {
+  if (event.clientX < rect.left + outerBand) {
     goPrev();
     return true;
   }
 
-  if (event.clientX > rect.right - outerBand && state.currentIndex < state.items.length - 1) {
+  if (event.clientX > rect.right - outerBand) {
     goNext();
     return true;
   }
@@ -292,21 +299,21 @@ function bindDeckInteractions() {
 
 async function loadProfile() {
   const profile = await apiFetch('/profile');
-  profileNameEl.textContent = profile.displayName || '我的主页';
+  profileNameEl.textContent = profile.displayName || '\u6211\u7684\u4e3b\u9875';
   profileAboutEl.innerHTML = renderProfileAbout(profile.site?.aboutMd || DEFAULT_ABOUT);
   renderAvatar(profile.avatarUrl, profile.displayName);
-  document.title = profile.site?.title || profile.displayName || '个人主页';
+  document.title = profile.site?.title || profile.displayName || '\u4e2a\u4eba\u4e3b\u9875';
 }
 
 async function loadPosts() {
-  carouselEl.innerHTML = '<div class="loading-block">内容加载中...</div>';
+  carouselEl.innerHTML = '<div class="loading-block">\u5185\u5bb9\u52a0\u8f7d\u4e2d...</div>';
 
   const data = await apiFetch('/posts?page=1&pageSize=50');
   state.items = data.items || [];
   state.currentIndex = 0;
 
   if (!state.items.length) {
-    carouselEl.innerHTML = '<div class="empty-block post-carousel-empty">暂时还没有内容，稍后再来看看。</div>';
+    carouselEl.innerHTML = '<div class="empty-block post-carousel-empty">\u6682\u65f6\u8fd8\u6ca1\u6709\u5185\u5bb9\uff0c\u7a0d\u540e\u518d\u6765\u770b\u770b\u3002</div>';
     updateDeck();
     return;
   }
@@ -322,6 +329,6 @@ async function boot() {
 
 boot().catch((error) => {
   console.error(error);
-  showToast(error.message || '页面加载失败');
-  carouselEl.innerHTML = '<div class="empty-block post-carousel-empty">页面加载失败，请稍后重试。</div>';
+  showToast(error.message || '\u9875\u9762\u52a0\u8f7d\u5931\u8d25');
+  carouselEl.innerHTML = '<div class="empty-block post-carousel-empty">\u9875\u9762\u52a0\u8f7d\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002</div>';
 });
