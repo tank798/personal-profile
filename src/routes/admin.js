@@ -38,6 +38,7 @@ import {
   toUserBrief,
 } from '../lib/utils.js';
 import { env } from '../lib/env.js';
+import { clearPublicCache } from '../lib/public-cache.js';
 
 export const adminRouter = Router();
 
@@ -85,6 +86,7 @@ adminRouter.put(
     );
 
     const row = await getCurrentUserWithSite(req.user.id);
+    clearPublicCache();
 
     res.json({
       user: toUserBrief(row),
@@ -144,6 +146,7 @@ adminRouter.put(
       `,
       values
     );
+    clearPublicCache();
 
     res.json(toSite(result.rows[0]));
   })
@@ -233,6 +236,7 @@ adminRouter.post(
       getCoverMediaByIds(post.cover_media_id ? [post.cover_media_id] : []),
       getPostImages(post.id),
     ]);
+    clearPublicCache();
 
     res.status(201).json({
       ...mapPostSummary(
@@ -449,6 +453,7 @@ adminRouter.put(
       getCoverMediaByIds(post.cover_media_id ? [post.cover_media_id] : []),
       getPostImages(post.id),
     ]);
+    clearPublicCache();
 
     res.json({
       ...mapPostSummary(
@@ -505,6 +510,7 @@ adminRouter.post(
         );
       }
     });
+    clearPublicCache();
 
     res.json({ ok: true });
   })
@@ -523,6 +529,7 @@ adminRouter.delete(
     if (result.rowCount === 0) {
       throw notFound('Post not found');
     }
+    clearPublicCache();
 
     res.status(204).send();
   })
@@ -553,6 +560,7 @@ adminRouter.post(
       getPostTags([post.id]),
       getCoverMediaByIds(post.cover_media_id ? [post.cover_media_id] : []),
     ]);
+    clearPublicCache();
 
     res.json({
       ...mapPostSummary(
@@ -594,6 +602,7 @@ adminRouter.post(
       getPostTags([post.id]),
       getCoverMediaByIds(post.cover_media_id ? [post.cover_media_id] : []),
     ]);
+    clearPublicCache();
 
     res.json({
       ...mapPostSummary(

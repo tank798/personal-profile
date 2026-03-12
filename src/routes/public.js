@@ -8,6 +8,7 @@ import {
   getPrimarySite,
   listTagsBySite,
 } from '../lib/repositories.js';
+import { buildPublicCacheKey, getPublicCache, setPublicCache } from '../lib/public-cache.js';
 import {
   listPublicPostsQuerySchema,
   postIdParamSchema,
@@ -20,21 +21,40 @@ export const publicRouter = Router();
 publicRouter.get(
   '/profile',
   asyncHandler(async (req, res) => {
+    const cacheKey = buildPublicCacheKey(req);
+    const cached = getPublicCache(cacheKey);
+    if (cached) {
+      res.set('x-cache', 'HIT');
+      res.json(cached);
+      return;
+    }
+
     const siteRow = await getPrimarySite();
 
-    res.json({
+    const payload = {
       username: siteRow.username,
       displayName: siteRow.display_name,
       bio: siteRow.bio,
       avatarUrl: siteRow.avatar_url,
       site: toSite(siteRow),
-    });
+    };
+
+    res.set('x-cache', 'MISS');
+    res.json(setPublicCache(cacheKey, payload));
   })
 );
 
 publicRouter.get(
   '/posts',
   asyncHandler(async (req, res) => {
+    const cacheKey = buildPublicCacheKey(req);
+    const cached = getPublicCache(cacheKey);
+    if (cached) {
+      res.set('x-cache', 'HIT');
+      res.json(cached);
+      return;
+    }
+
     const { page, pageSize, tag } = validate(listPublicPostsQuerySchema, req.query);
     const siteRow = await getPrimarySite();
 
@@ -83,18 +103,29 @@ publicRouter.get(
       mapPostSummary(row, tagMap.get(row.id) ?? [], row.cover_media_id ? coverMap.get(row.cover_media_id) ?? null : null)
     );
 
-    res.json({
+    const payload = {
       items,
       page,
       pageSize,
       total,
-    });
+    };
+
+    res.set('x-cache', 'MISS');
+    res.json(setPublicCache(cacheKey, payload));
   })
 );
 
 publicRouter.get(
   '/posts/:postId',
   asyncHandler(async (req, res) => {
+    const cacheKey = buildPublicCacheKey(req);
+    const cached = getPublicCache(cacheKey);
+    if (cached) {
+      res.set('x-cache', 'HIT');
+      res.json(cached);
+      return;
+    }
+
     const { postId } = validate(postIdParamSchema, req.params);
     const siteRow = await getPrimarySite();
 
@@ -120,7 +151,7 @@ publicRouter.get(
       getPostImages(post.id),
     ]);
 
-    res.json({
+    const payload = {
       ...mapPostSummary(
         post,
         tagMap.get(post.id) ?? [],
@@ -130,15 +161,29 @@ publicRouter.get(
       images,
       createdAt: post.created_at,
       updatedAt: post.updated_at,
-    });
+    };
+
+    res.set('x-cache', 'MISS');
+    res.json(setPublicCache(cacheKey, payload));
   })
 );
 
 publicRouter.get(
   '/tags',
   asyncHandler(async (req, res) => {
+    const cacheKey = buildPublicCacheKey(req);
+    const cached = getPublicCache(cacheKey);
+    if (cached) {
+      res.set('x-cache', 'HIT');
+      res.json(cached);
+      return;
+    }
+
     const siteRow = await getPrimarySite();
     const items = await listTagsBySite(siteRow.site_id);
-    res.json({ items });
+    const payload = { items };
+
+    res.set('x-cache', 'MISS');
+    res.json(setPublicCache(cacheKey, payload));
   })
 );
