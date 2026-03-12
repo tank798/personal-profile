@@ -49,8 +49,10 @@ function renderGalleryCard(image, index, title) {
   return `
     <button class="detail-gallery-card" type="button" data-index="${index}" data-preview-src="${src}" aria-label="${escapeHtml(alt)}">
       <span class="detail-gallery-media">
-        <img class="detail-gallery-blur" src="${src}" alt="" aria-hidden="true" loading="lazy" />
-        <img class="detail-gallery-photo" src="${src}" alt="${escapeHtml(alt)}" loading="lazy" />
+        <span class="detail-gallery-stage">
+          <img class="detail-gallery-blur" src="${src}" alt="" aria-hidden="true" loading="lazy" />
+          <img class="detail-gallery-photo" src="${src}" alt="${escapeHtml(alt)}" loading="lazy" />
+        </span>
       </span>
     </button>
   `;
@@ -176,6 +178,8 @@ function updateGallery() {
     delete galleryEl.dataset.activeOrientation;
   }
 
+  syncGalleryMediaFit(cards);
+
   if (countEl) {
     countEl.textContent = `${galleryState.currentIndex + 1} / ${cards.length}`;
   }
@@ -231,8 +235,53 @@ function classifyGalleryImage(image) {
     orientation = 'portrait';
   }
 
+  const ratio = width / height;
   image.dataset.orientation = orientation;
-  image.closest('.detail-gallery-card')?.setAttribute('data-orientation', orientation);
+  image.dataset.ratio = ratio.toFixed(4);
+
+  const card = image.closest('.detail-gallery-card');
+  if (card) {
+    card.setAttribute('data-orientation', orientation);
+    card.dataset.ratio = ratio.toFixed(4);
+  }
+}
+
+function syncCardMediaFit(card) {
+  if (!card) return;
+
+  const ratio = Number(card.dataset.ratio || card.style.getPropertyValue('--image-ratio'));
+  const media = card.querySelector('.detail-gallery-media');
+  if (!media || !Number.isFinite(ratio) || ratio <= 0) {
+    card.style.removeProperty('--media-fit-width');
+    card.style.removeProperty('--media-fit-height');
+    return;
+  }
+
+  const mediaStyles = window.getComputedStyle(media);
+  const paddingX = parseFloat(mediaStyles.paddingLeft || '0') + parseFloat(mediaStyles.paddingRight || '0');
+  const paddingY = parseFloat(mediaStyles.paddingTop || '0') + parseFloat(mediaStyles.paddingBottom || '0');
+  const availableWidth = Math.max(0, media.clientWidth - paddingX);
+  const availableHeight = Math.max(0, media.clientHeight - paddingY);
+
+  if (!availableWidth || !availableHeight) return;
+
+  let fitWidth = availableWidth;
+  let fitHeight = fitWidth / ratio;
+
+  if (fitHeight > availableHeight) {
+    fitHeight = availableHeight;
+    fitWidth = fitHeight * ratio;
+  }
+
+  card.style.setProperty('--image-ratio', ratio.toFixed(4));
+  card.style.setProperty('--media-fit-width', `${Math.round(fitWidth)}px`);
+  card.style.setProperty('--media-fit-height', `${Math.round(fitHeight)}px`);
+}
+
+function syncGalleryMediaFit(cards) {
+  for (const card of cards) {
+    syncCardMediaFit(card);
+  }
 }
 
 function syncGalleryImageOrientation() {
