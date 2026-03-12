@@ -109,14 +109,14 @@ function getLoopOffset(index, activeIndex, count) {
 
 function getGalleryMetrics() {
   if (window.innerWidth >= 1180) {
-    return { xStep: 174, yStep: 18, scaleStep: 0.08, rotateStep: 3.8 };
+    return { xStep: 232, yStep: 16, scaleStep: 0.08, rotateStep: 3.2 };
   }
 
   if (window.innerWidth >= 840) {
-    return { xStep: 146, yStep: 16, scaleStep: 0.08, rotateStep: 3.4 };
+    return { xStep: 194, yStep: 14, scaleStep: 0.08, rotateStep: 2.9 };
   }
 
-  return { xStep: 78, yStep: 12, scaleStep: 0.08, rotateStep: 2.6 };
+  return { xStep: 104, yStep: 10, scaleStep: 0.08, rotateStep: 2.1 };
 }
 
 function updateGallery() {
@@ -151,7 +151,7 @@ function updateGallery() {
     const direction = offset === 0 ? 0 : offset > 0 ? 1 : -1;
     const signedAbs = direction * absOffset;
     const scale = Math.max(0.78, 1 - absOffset * metrics.scaleStep);
-    const opacity = absOffset === 0 ? 1 : absOffset === 1 ? 0.74 : 0.44;
+    const opacity = absOffset === 0 ? 1 : absOffset === 1 ? 0.54 : 0.18;
     const y = absOffset * metrics.yStep;
     const x = signedAbs * metrics.xStep;
     const rotate = signedAbs * metrics.rotateStep;
