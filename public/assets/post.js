@@ -6,12 +6,16 @@ const viewerEl = document.getElementById('image-viewer');
 const viewerImageEl = document.getElementById('viewer-image');
 const TRANSPARENT_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=';
 const VISIBLE_GALLERY_IMAGE_DISTANCE = 2;
+const DECODED_GALLERY_IMAGE_DISTANCE = 1;
+const GALLERY_IMAGE_READY_TIMEOUT_MS = 1800;
 
 const galleryState = {
   items: [],
   currentIndex: 0,
   pointerStartX: 0,
   pointerStartY: 0,
+  touchStartX: 0,
+  touchStartY: 0,
   pointerDown: false,
   pointerId: null,
   suppressClickUntil: 0,
@@ -19,6 +23,8 @@ const galleryState = {
   countEl: null,
   prevBtnEl: null,
   nextBtnEl: null,
+  navigating: false,
+  queuedIndex: null,
 };
 
 function renderTags(tags = []) {
@@ -52,7 +58,6 @@ function renderGalleryCard(image, index, title) {
     <button class="detail-gallery-card" type="button" data-index="${index}" data-preview-src="${src}" aria-label="${escapeHtml(alt)}">
       <span class="detail-gallery-media">
         <span class="detail-gallery-stage">
-          <img class="detail-gallery-blur" src="${TRANSPARENT_PIXEL}" data-src="${src}" data-loaded="false" alt="" aria-hidden="true" loading="lazy" decoding="async" />
           <img class="detail-gallery-photo" src="${TRANSPARENT_PIXEL}" data-src="${src}" data-loaded="false" alt="${escapeHtml(alt)}" loading="lazy" decoding="async" />
         </span>
       </span>
@@ -141,36 +146,140 @@ function bindGalleryPhotoMeasurement(image) {
   );
 }
 
-function ensureGalleryCardImageLoaded(card, absOffset) {
-  if (absOffset > VISIBLE_GALLERY_IMAGE_DISTANCE) {
+function waitForGalleryImageReady(image, timeoutMs = GALLERY_IMAGE_READY_TIMEOUT_MS) {
+  if (!image) {
+    return Promise.resolve();
+  }
+
+  if (image.complete && image.naturalWidth > 0) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timerId);
+      image.removeEventListener('load', finish);
+      image.removeEventListener('error', finish);
+      resolve();
+    };
+
+    const timerId = window.setTimeout(finish, timeoutMs);
+    image.addEventListener('load', finish, { once: true });
+    image.addEventListener('error', finish, { once: true });
+  });
+}
+
+async function decodeGalleryImage(image) {
+  await waitForGalleryImageReady(image);
+
+  if (!image || image.dataset.decoded === 'true' || !image.naturalWidth) {
     return;
   }
 
-  const images = card.querySelectorAll('img[data-src]');
-  for (const image of images) {
-    if (image.dataset.loaded === 'true') {
-      continue;
-    }
-
-    const nextSrc = image.dataset.src;
-    if (!nextSrc) {
-      continue;
-    }
-
-    const isPrimary = image.classList.contains('detail-gallery-photo');
-    image.loading = absOffset === 0 ? 'eager' : 'lazy';
-    image.setAttribute('fetchpriority', absOffset === 0 && isPrimary ? 'high' : 'low');
-    image.src = nextSrc;
-    image.dataset.loaded = 'true';
-
-    if (isPrimary) {
-      bindGalleryPhotoMeasurement(image);
+  if (typeof image.decode === 'function') {
+    try {
+      await image.decode();
+    } catch {
+      // Fall back to the loaded image when decode is unavailable or interrupted.
     }
   }
 
-  const photo = card.querySelector('.detail-gallery-photo');
-  if (photo) {
-    bindGalleryPhotoMeasurement(photo);
+  image.dataset.decoded = 'true';
+}
+
+function startGalleryImageLoad(image, absOffset) {
+  if (!image) {
+    return;
+  }
+
+  const nextSrc = image.dataset.src;
+  if (!nextSrc) {
+    return;
+  }
+
+  image.loading = absOffset === 0 ? 'eager' : 'lazy';
+  image.setAttribute('fetchpriority', absOffset <= 1 ? 'high' : 'low');
+
+  if (image.dataset.loaded !== 'true') {
+    image.src = nextSrc;
+    image.dataset.loaded = 'true';
+  }
+
+  bindGalleryPhotoMeasurement(image);
+}
+
+function releaseGalleryImage(image) {
+  if (!image) {
+    return;
+  }
+
+  if (image.src === TRANSPARENT_PIXEL && image.dataset.loaded !== 'true') {
+    return;
+  }
+  image.src = TRANSPARENT_PIXEL;
+  image.dataset.loaded = 'false';
+  image.dataset.decoded = 'false';
+  image.loading = 'lazy';
+  image.removeAttribute('fetchpriority');
+}
+
+function releaseGalleryCard(card) {
+  const photo = card?.querySelector('.detail-gallery-photo');
+  releaseGalleryImage(photo);
+}
+
+function primeGalleryCard(card, absOffset, options = {}) {
+  if (absOffset > VISIBLE_GALLERY_IMAGE_DISTANCE) {
+    return Promise.resolve();
+  }
+
+  const { decode = false } = options;
+  const photo = card?.querySelector('.detail-gallery-photo');
+  if (!photo) {
+    return Promise.resolve();
+  }
+
+  startGalleryImageLoad(photo, absOffset);
+  if (!decode) {
+    return Promise.resolve();
+  }
+
+  return decodeGalleryImage(photo);
+}
+
+async function prepareGalleryIndex(nextIndex) {
+  const { galleryEl } = galleryState;
+  if (!galleryEl) {
+    return;
+  }
+
+  const cards = [...galleryEl.querySelectorAll('.detail-gallery-card')];
+  if (!cards.length) {
+    return;
+  }
+
+  const targetCard = cards.find((card) => Number(card.dataset.index) === nextIndex);
+  if (!targetCard) {
+    return;
+  }
+
+  await primeGalleryCard(targetCard, 0, { decode: true });
+
+  const total = cards.length;
+  const neighborIndexes = [
+    (nextIndex + 1) % total,
+    (nextIndex - 1 + total) % total,
+  ];
+
+  for (const index of neighborIndexes) {
+    const neighborCard = cards.find((card) => Number(card.dataset.index) === index);
+    if (neighborCard) {
+      void primeGalleryCard(neighborCard, 1, { decode: true });
+    }
   }
 }
 
@@ -196,7 +305,8 @@ function updateGallery() {
 
     card.classList.remove('is-active', 'is-left', 'is-right', 'is-neighbor', 'gallery-hidden');
 
-    if (absOffset > 2) {
+    if (absOffset > VISIBLE_GALLERY_IMAGE_DISTANCE) {
+      releaseGalleryCard(card);
       card.classList.add('gallery-hidden');
       card.tabIndex = -1;
       card.setAttribute('aria-hidden', 'true');
@@ -210,8 +320,7 @@ function updateGallery() {
     const y = absOffset * metrics.yStep;
     const x = signedAbs * metrics.xStep;
     const rotate = signedAbs * metrics.rotateStep;
-
-    ensureGalleryCardImageLoaded(card, absOffset);
+    void primeGalleryCard(card, absOffset, { decode: absOffset <= DECODED_GALLERY_IMAGE_DISTANCE });
 
     card.style.setProperty('--gallery-x', `${x}px`);
     card.style.setProperty('--gallery-y', `${y}px`);
@@ -251,23 +360,44 @@ function updateGallery() {
   nextBtnEl?.classList.remove('hidden');
 }
 
-function goToGalleryIndex(nextIndex) {
+async function goToGalleryIndex(nextIndex) {
   const total = galleryState.items.length;
   if (!total) return;
 
   const normalized = ((nextIndex % total) + total) % total;
   if (normalized === galleryState.currentIndex) return;
 
-  galleryState.currentIndex = normalized;
-  updateGallery();
+  if (galleryState.navigating) {
+    galleryState.queuedIndex = normalized;
+    return;
+  }
+
+  galleryState.navigating = true;
+
+  try {
+    await prepareGalleryIndex(normalized);
+    galleryState.currentIndex = normalized;
+    updateGallery();
+  } finally {
+    galleryState.navigating = false;
+
+    if (galleryState.queuedIndex != null && galleryState.queuedIndex !== galleryState.currentIndex) {
+      const queuedIndex = galleryState.queuedIndex;
+      galleryState.queuedIndex = null;
+      void goToGalleryIndex(queuedIndex);
+      return;
+    }
+
+    galleryState.queuedIndex = null;
+  }
 }
 
 function goToNextImage() {
-  goToGalleryIndex(galleryState.currentIndex + 1);
+  void goToGalleryIndex(galleryState.currentIndex + 1);
 }
 
 function goToPrevImage() {
-  goToGalleryIndex(galleryState.currentIndex - 1);
+  void goToGalleryIndex(galleryState.currentIndex - 1);
 }
 
 function resolveGalleryCard(event) {
@@ -359,16 +489,45 @@ function bindGalleryInteractions() {
   if (!galleryEl || !prevBtnEl || !nextBtnEl) return;
 
   prevBtnEl.addEventListener('click', (event) => {
+    event.preventDefault();
     event.stopPropagation();
     goToPrevImage();
   });
 
   nextBtnEl.addEventListener('click', (event) => {
+    event.preventDefault();
     event.stopPropagation();
     goToNextImage();
   });
 
   galleryEl.tabIndex = 0;
+
+  const resetTouchTrack = () => {
+    galleryState.touchStartX = 0;
+    galleryState.touchStartY = 0;
+  };
+
+  galleryEl.addEventListener('touchstart', (event) => {
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    galleryState.touchStartX = touch.clientX;
+    galleryState.touchStartY = touch.clientY;
+  }, { passive: true });
+
+  galleryEl.addEventListener('touchmove', (event) => {
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    const dx = touch.clientX - galleryState.touchStartX;
+    const dy = touch.clientY - galleryState.touchStartY;
+    if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) {
+      event.preventDefault();
+    }
+  }, { passive: false });
+
+  galleryEl.addEventListener('touchend', resetTouchTrack);
+  galleryEl.addEventListener('touchcancel', resetTouchTrack);
 
   galleryEl.addEventListener('click', (event) => {
     if (Date.now() < galleryState.suppressClickUntil) return;

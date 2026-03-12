@@ -167,8 +167,8 @@ html.entry-ready .entry-gate {
 .entry-gate-track::after {
   content: "";
   position: absolute;
-  left: 10px;
-  right: 10px;
+  left: 6px;
+  right: 6px;
   top: 31px;
   height: 6px;
   border-radius: 999px;
@@ -832,6 +832,7 @@ html.entry-ready .entry-gate {
   height: clamp(520px, 72vw, 760px);
   overflow: hidden;
   touch-action: pan-y;
+  overscroll-behavior: contain;
   user-select: none;
   isolation: isolate;
 }
@@ -859,6 +860,8 @@ html.entry-ready .entry-gate {
   transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 220ms ease;
   cursor: pointer;
   will-change: transform, opacity;
+  backface-visibility: hidden;
+  contain: layout paint;
   display: grid;
 }
 
@@ -903,6 +906,8 @@ html.entry-ready .entry-gate {
   max-height: 100%;
   flex: 0 0 auto;
   display: block;
+  border-radius: 18px;
+  overflow: hidden;
   isolation: isolate;
 }
 
@@ -910,7 +915,6 @@ html.entry-ready .entry-gate {
   content: none;
 }
 
-.detail-gallery-blur,
 .detail-gallery-photo {
   position: absolute;
   inset: 0;
@@ -919,39 +923,19 @@ html.entry-ready .entry-gate {
   height: 100%;
   object-fit: cover;
   border-radius: 18px;
-  transition: filter 220ms ease, opacity 180ms ease, transform 220ms ease, box-shadow 180ms ease;
-}
-
-.detail-gallery-blur {
-  filter: blur(14px) saturate(100%);
-  opacity: 0;
-  transform: scale(1.01);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.detail-gallery-photo {
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  transition: opacity 180ms ease, transform 220ms ease, box-shadow 180ms ease;
   z-index: 1;
   box-shadow: 0 14px 30px rgba(69, 50, 34, 0.08);
 }
-
-.detail-gallery-card:not(.is-active) .detail-gallery-blur {
-  filter: blur(76px) saturate(82%);
-  opacity: 0.04;
-  transform: scale(1.14);
-}
-
 .detail-gallery-card:not(.is-active) .detail-gallery-photo {
-  filter: blur(34px) saturate(62%);
-  opacity: 0.035;
-  transform: scale(1.12);
+  opacity: 0.16;
+  transform: scale(1.035);
 }
-
-.detail-gallery-card.is-active .detail-gallery-blur {
-  opacity: 0;
-}
-
 .detail-gallery-card.is-active .detail-gallery-photo {
+  opacity: 1;
+  transform: none;
   box-shadow: 0 16px 34px rgba(69, 50, 34, 0.1);
 }
 
@@ -1771,7 +1755,6 @@ body.is-sorting-posts {
 
   .detail-gallery-stage,
   .detail-gallery-stage::before,
-  .detail-gallery-blur,
   .detail-gallery-photo {
     border-radius: 16px;
   }
@@ -1787,11 +1770,11 @@ body.is-sorting-posts {
   }
 
   .detail-gallery-btn.prev {
-    left: 6px;
+    left: 10px;
   }
 
   .detail-gallery-btn.next {
-    right: 6px;
+    right: 10px;
   }
 
   .recommend-list {
