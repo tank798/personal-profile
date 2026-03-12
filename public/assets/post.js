@@ -47,7 +47,9 @@ function renderGalleryCard(image, index, title) {
   const alt = `${title || '\u5e16\u5b50\u56fe\u7247'} - \u7b2c${index + 1}\u5f20\u56fe\u7247`;
   return `
     <button class="detail-gallery-card" type="button" data-index="${index}" data-preview-src="${escapeHtml(image.url)}" aria-label="${escapeHtml(alt)}">
-      <img src="${escapeHtml(image.url)}" alt="${escapeHtml(alt)}" />
+      <span class="detail-gallery-media">
+        <img src="${escapeHtml(image.url)}" alt="${escapeHtml(alt)}" loading="lazy" />
+      </span>
     </button>
   `;
 }
@@ -201,6 +203,35 @@ function resolveGalleryCard(event) {
   return stack.find((element) => element.classList?.contains('detail-gallery-card')) || null;
 }
 
+function classifyGalleryImage(image) {
+  const width = image.naturalWidth || 0;
+  const height = image.naturalHeight || 0;
+  if (!width || !height) return;
+
+  let orientation = 'square';
+  if (width > height * 1.08) {
+    orientation = 'landscape';
+  } else if (height > width * 1.08) {
+    orientation = 'portrait';
+  }
+
+  image.dataset.orientation = orientation;
+}
+
+function syncGalleryImageOrientation() {
+  if (!galleryState.galleryEl) return;
+
+  const images = galleryState.galleryEl.querySelectorAll('.detail-gallery-media img');
+  for (const image of images) {
+    if (image.complete) {
+      classifyGalleryImage(image);
+      continue;
+    }
+
+    image.addEventListener('load', () => classifyGalleryImage(image), { once: true });
+  }
+}
+
 function bindGalleryInteractions() {
   const { galleryEl, prevBtnEl, nextBtnEl } = galleryState;
   if (!galleryEl || !prevBtnEl || !nextBtnEl) return;
@@ -318,6 +349,7 @@ function initGallery(images) {
   if (!galleryState.galleryEl) return;
 
   bindGalleryInteractions();
+  syncGalleryImageOrientation();
   updateGallery();
 }
 
