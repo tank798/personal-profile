@@ -126,100 +126,28 @@ html.entry-ready .entry-gate {
 }
 
 .entry-gate-panel {
-  --entry-traveler-size: 58px;
-  position: relative;
-  width: min(100%, 620px);
-  padding: clamp(28px, 6vw, 46px);
-  border: 1px solid rgba(107, 79, 58, 0.11);
-  border-radius: 34px;
-  background:
-    linear-gradient(160deg, rgba(255, 255, 255, 0.68), rgba(255, 250, 244, 0.72)),
-    linear-gradient(180deg, rgba(250, 244, 236, 0.98), rgba(242, 233, 223, 0.92));
-  box-shadow: 0 30px 78px rgba(107, 79, 58, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(14px);
-  overflow: hidden;
-}
-
-.entry-gate-panel::before {
-  content: "";
-  position: absolute;
-  inset: 12px;
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  pointer-events: none;
-}
-
-.entry-gate-panel::after {
-  content: "";
-  position: absolute;
-  right: -40px;
-  top: -46px;
-  width: 190px;
-  height: 190px;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0));
-  pointer-events: none;
-}
-
-.entry-gate-kicker {
-  margin: 0 0 18px;
-  color: color-mix(in srgb, var(--brand-primary) 92%, black 8%);
-  font-size: 0.76rem;
-  font-weight: 700;
-  letter-spacing: 0.34em;
+  --entry-traveler-size: 54px;
+  width: min(100%, 760px);
+  display: grid;
+  gap: 34px;
+  justify-items: center;
 }
 
 .entry-gate-title {
   margin: 0;
-  display: grid;
-  gap: 6px;
-}
-
-.entry-gate-title-main {
   font-family: "Bodoni MT", "Didot", "Noto Serif SC", "Songti SC", serif;
-  font-size: clamp(3.1rem, 13vw, 6.2rem);
-  line-height: 0.9;
-  letter-spacing: 0.04em;
-  color: color-mix(in srgb, var(--text-primary) 90%, black 10%);
-}
-
-.entry-gate-title-sub {
-  font-family: "Noto Serif SC", "Songti SC", serif;
-  font-size: clamp(1.42rem, 5.4vw, 2.52rem);
-  line-height: 1.06;
-  color: color-mix(in srgb, var(--text-primary) 86%, var(--brand-primary) 14%);
-}
-
-.entry-gate-subtitle {
-  margin: 20px 0 0;
-  max-width: min(100%, 32rem);
-  color: color-mix(in srgb, var(--text-secondary) 84%, var(--brand-primary) 16%);
-  font-size: clamp(0.98rem, 3.1vw, 1.06rem);
-  line-height: 1.82;
-  letter-spacing: 0.015em;
-}
-
-.entry-gate-progress {
-  margin-top: 30px;
-  display: grid;
-  gap: 12px;
-}
-
-.entry-gate-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.entry-gate-status {
-  color: color-mix(in srgb, var(--brand-primary) 66%, var(--text-secondary) 34%);
-  font-size: 0.92rem;
-  letter-spacing: 0.04em;
+  font-size: clamp(2.6rem, 9.4vw, 5.8rem);
+  line-height: 1;
+  letter-spacing: 0.03em;
+  text-align: center;
+  text-wrap: balance;
+  color: color-mix(in srgb, var(--text-primary) 92%, black 8%);
+  text-shadow: 0 10px 32px rgba(107, 79, 58, 0.1);
 }
 
 .entry-gate-track {
   position: relative;
+  width: min(100%, 640px);
   height: 66px;
   overflow: visible;
 }
@@ -285,7 +213,7 @@ html.entry-ready .entry-gate {
   position: relative;
   width: var(--entry-traveler-size);
   height: var(--entry-traveler-size);
-  border-radius: 18px;
+  border-radius: 999px;
   display: grid;
   place-items: center;
   background:
@@ -299,7 +227,7 @@ html.entry-ready .entry-gate {
   content: "";
   position: absolute;
   inset: 4px;
-  border-radius: 14px;
+  border-radius: inherit;
   border: 1px solid rgba(255, 255, 255, 0.44);
   pointer-events: none;
 }
@@ -313,15 +241,6 @@ html.entry-ready .entry-gate {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-
-.entry-gate-value {
-  color: color-mix(in srgb, var(--brand-primary) 92%, black 8%);
-  font-size: clamp(1rem, 3.6vw, 1.28rem);
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-}
-
 @keyframes entry-bar-shimmer {
   from {
     transform: translateX(-120%);
@@ -1993,37 +1912,16 @@ body.is-sorting-posts {
 
 @media (max-width: 420px) {
   .entry-gate {
-    padding: 18px;
+    padding: 24px;
   }
 
   .entry-gate-panel {
-    --entry-traveler-size: 52px;
-    padding: 24px 20px;
-    border-radius: 24px;
-  }
-
-  .entry-gate-kicker {
-    margin-bottom: 14px;
-    font-size: 0.7rem;
-    letter-spacing: 0.26em;
-  }
-
-  .entry-gate-subtitle {
-    margin-top: 16px;
-    max-width: 100%;
-  }
-
-  .entry-gate-meta {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-  }
-
-  .entry-gate-status {
-    font-size: 0.88rem;
+    --entry-traveler-size: 48px;
+    gap: 26px;
   }
 
   .entry-gate-track {
+    width: 100%;
     height: 60px;
   }
 
