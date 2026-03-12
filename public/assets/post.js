@@ -4,6 +4,8 @@ const postDetailEl = document.getElementById('post-detail');
 const recommendListEl = document.getElementById('recommend-list');
 const viewerEl = document.getElementById('image-viewer');
 const viewerImageEl = document.getElementById('viewer-image');
+const TRANSPARENT_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=';
+const VISIBLE_GALLERY_IMAGE_DISTANCE = 2;
 
 const galleryState = {
   items: [],
@@ -50,8 +52,8 @@ function renderGalleryCard(image, index, title) {
     <button class="detail-gallery-card" type="button" data-index="${index}" data-preview-src="${src}" aria-label="${escapeHtml(alt)}">
       <span class="detail-gallery-media">
         <span class="detail-gallery-stage">
-          <img class="detail-gallery-blur" src="${src}" alt="" aria-hidden="true" loading="lazy" />
-          <img class="detail-gallery-photo" src="${src}" alt="${escapeHtml(alt)}" loading="lazy" />
+          <img class="detail-gallery-blur" src="${TRANSPARENT_PIXEL}" data-src="${src}" data-loaded="false" alt="" aria-hidden="true" loading="lazy" decoding="async" />
+          <img class="detail-gallery-photo" src="${TRANSPARENT_PIXEL}" data-src="${src}" data-loaded="false" alt="${escapeHtml(alt)}" loading="lazy" decoding="async" />
         </span>
       </span>
     </button>
@@ -119,6 +121,59 @@ function getGalleryMetrics() {
   return { xStep: 104, yStep: 10, scaleStep: 0.08, rotateStep: 2.1 };
 }
 
+function bindGalleryPhotoMeasurement(image) {
+  if (!image || image.dataset.measureBound === 'true') return;
+
+  if (image.complete && image.naturalWidth) {
+    classifyGalleryImage(image);
+    return;
+  }
+
+  image.dataset.measureBound = 'true';
+  image.addEventListener(
+    'load',
+    () => {
+      image.dataset.measureBound = 'done';
+      classifyGalleryImage(image);
+      updateGallery();
+    },
+    { once: true }
+  );
+}
+
+function ensureGalleryCardImageLoaded(card, absOffset) {
+  if (absOffset > VISIBLE_GALLERY_IMAGE_DISTANCE) {
+    return;
+  }
+
+  const images = card.querySelectorAll('img[data-src]');
+  for (const image of images) {
+    if (image.dataset.loaded === 'true') {
+      continue;
+    }
+
+    const nextSrc = image.dataset.src;
+    if (!nextSrc) {
+      continue;
+    }
+
+    const isPrimary = image.classList.contains('detail-gallery-photo');
+    image.loading = absOffset === 0 ? 'eager' : 'lazy';
+    image.setAttribute('fetchpriority', absOffset === 0 && isPrimary ? 'high' : 'low');
+    image.src = nextSrc;
+    image.dataset.loaded = 'true';
+
+    if (isPrimary) {
+      bindGalleryPhotoMeasurement(image);
+    }
+  }
+
+  const photo = card.querySelector('.detail-gallery-photo');
+  if (photo) {
+    bindGalleryPhotoMeasurement(photo);
+  }
+}
+
 function updateGallery() {
   const { galleryEl, countEl, prevBtnEl, nextBtnEl } = galleryState;
   if (!galleryEl) return;
@@ -155,6 +210,8 @@ function updateGallery() {
     const y = absOffset * metrics.yStep;
     const x = signedAbs * metrics.xStep;
     const rotate = signedAbs * metrics.rotateStep;
+
+    ensureGalleryCardImageLoaded(card, absOffset);
 
     card.style.setProperty('--gallery-x', `${x}px`);
     card.style.setProperty('--gallery-y', `${y}px`);
@@ -287,21 +344,11 @@ function syncGalleryMediaFit(cards) {
 function syncGalleryImageOrientation() {
   if (!galleryState.galleryEl) return;
 
-  const images = galleryState.galleryEl.querySelectorAll('.detail-gallery-media img');
+  const images = galleryState.galleryEl.querySelectorAll('.detail-gallery-photo');
   for (const image of images) {
-    if (image.complete) {
+    if (image.complete && image.naturalWidth) {
       classifyGalleryImage(image);
-      continue;
     }
-
-    image.addEventListener(
-      'load',
-      () => {
-        classifyGalleryImage(image);
-        updateGallery();
-      },
-      { once: true }
-    );
   }
 
   updateGallery();
