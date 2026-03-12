@@ -27,9 +27,15 @@ const nextBtnEl = document.getElementById('carousel-next');
 const entryGateEl = document.getElementById('entry-gate');
 const entryGateStatusEl = document.getElementById('entry-gate-status');
 const entryGateValueEl = document.getElementById('entry-gate-value');
+const shouldShowEntryGate = window.__castleShouldShowEntry !== false;
 
 let entryProgress = 0;
 let entryGateReleased = false;
+
+if (!shouldShowEntryGate) {
+  entryGateReleased = true;
+  entryGateEl?.remove();
+}
 
 function sleep(ms) {
   return new Promise((resolve) => {
@@ -45,11 +51,12 @@ function clearEntryFallback() {
 }
 
 function setEntryProgress(value, statusText) {
-  if (!entryGateEl) return;
+  if (!entryGateEl || entryGateReleased) return;
 
   const normalized = Math.max(entryProgress, Math.max(0, Math.min(100, Math.round(value))));
   entryProgress = normalized;
   entryGateEl.style.setProperty('--entry-progress', `${normalized}%`);
+  entryGateEl.style.setProperty('--entry-progress-ratio', (normalized / 100).toFixed(4));
 
   if (entryGateValueEl) {
     entryGateValueEl.textContent = `${normalized}%`;
@@ -69,7 +76,7 @@ async function releaseEntryGate(finalStatusText) {
   }
 
   entryGateReleased = true;
-  setEntryProgress(100, finalStatusText || '\u5e8f\u5e55\u5373\u5c06\u5c55\u5f00');
+  setEntryProgress(100, finalStatusText || '\u6545\u4e8b\u5df2\u7ecf\u5c31\u4f4d');
   entryGateEl.setAttribute('aria-busy', 'false');
   await sleep(220);
   window.__castleEntryRelease?.();
@@ -471,24 +478,24 @@ async function loadPosts() {
 }
 
 async function boot() {
-  setEntryProgress(12, '\u6b63\u5728\u5524\u9192 Castle \u7684\u95e8\u5385');
+  setEntryProgress(12, '\u6b63\u5728\u70b9\u4eae Castle \u7684\u95e8\u5385');
   bindDeckInteractions();
   await Promise.all([
     loadProfile().then(() => {
-      setEntryProgress(48, '\u6b63\u5728\u6574\u7406\u4f60\u7684\u4e3b\u89d2\u540d\u7247');
+      setEntryProgress(48, '\u6b63\u5728\u6574\u7406\u4eca\u65e5\u7684\u9875\u518c');
     }),
     loadPosts().then(() => {
-      setEntryProgress(80, '\u6b63\u5728\u6446\u653e\u9996\u5c4f\u6545\u4e8b\u5361\u7247');
+      setEntryProgress(80, '\u6b63\u5728\u5b89\u653e\u9996\u5c4f\u753b\u5e45');
     }),
   ]);
-  setEntryProgress(92, '\u6b63\u5728\u70b9\u4eae\u9996\u5c4f\u89c6\u89c9');
+  setEntryProgress(92, '\u6b63\u5728\u6821\u51c6\u6700\u540e\u7684\u5149\u5f71');
   await waitForInitialVisuals();
-  await releaseEntryGate('\u6b22\u8fce\u5165\u573a');
+  await releaseEntryGate('\u6545\u4e8b\u5df2\u7ecf\u5c31\u4f4d');
 }
 
 boot().catch((error) => {
   console.error(error);
   showToast(error.message || '\u9875\u9762\u52a0\u8f7d\u5931\u8d25');
   carouselEl.innerHTML = '<div class="empty-block post-carousel-empty">\u9875\u9762\u52a0\u8f7d\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002</div>';
-  releaseEntryGate('\u5165\u573a\u7a0d\u6709\u5ef6\u8fdf\uff0c\u6b63\u5728\u4e3a\u4f60\u6253\u5f00\u9875\u9762').catch(() => {});
+  releaseEntryGate('\u6b63\u5728\u4e3a\u4f60\u6253\u5f00\u9875\u9762').catch(() => {});
 });

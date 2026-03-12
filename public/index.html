@@ -5,17 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>&#x4E2A;&#x4EBA;&#x4E3B;&#x9875;</title>
     <meta name="description" content="&#x4E00;&#x4E2A;&#x6E29;&#x6696;&#x3001;&#x7B80;&#x7EA6;&#x3001;&#x53EF;&#x6301;&#x7EED;&#x66F4;&#x65B0;&#x7684;&#x4E2A;&#x4EBA;&#x6570;&#x5B57;&#x7A7A;&#x95F4;" />
-    <link rel="stylesheet" href="/assets/styles.css?v=20260312-24" />
+    <link rel="stylesheet" href="/assets/styles.css?v=20260313-02" />
     <script>
       (() => {
         const root = document.documentElement;
+        const entryStorageKey = 'castle-entry-gate-seen';
+        let shouldShowEntry = true;
+
+        try {
+          shouldShowEntry = window.sessionStorage.getItem(entryStorageKey) !== '1';
+        } catch {
+          shouldShowEntry = true;
+        }
+
         const release = () => {
           root.classList.add('entry-ready');
           root.classList.remove('entry-locked');
+
+          try {
+            window.sessionStorage.setItem(entryStorageKey, '1');
+          } catch {
+            // Ignore storage failures and continue rendering the page.
+          }
         };
 
-        root.classList.add('entry-locked');
+        window.__castleShouldShowEntry = shouldShowEntry;
         window.__castleEntryRelease = release;
+
+        if (!shouldShowEntry) {
+          root.classList.add('entry-ready');
+          return;
+        }
+
+        root.classList.add('entry-locked');
         window.__castleEntryFallback = window.setTimeout(release, 20000);
         window.addEventListener('error', release, { once: true });
         window.addEventListener('unhandledrejection', release, { once: true });
@@ -23,17 +45,34 @@
     </script>
   </head>
   <body>
-    <div class="entry-gate" id="entry-gate" aria-live="polite" aria-busy="true" style="--entry-progress: 0%;">
+    <div class="entry-gate" id="entry-gate" aria-live="polite" aria-busy="true" style="--entry-progress: 0%; --entry-progress-ratio: 0;">
       <div class="entry-gate-panel">
         <p class="entry-gate-kicker">CASTLE ARCHIVE</p>
-        <h1 class="entry-gate-title">&#x6B22;&#x8FCE;&#x6765;&#x5230; Castle &#x7684;&#x4E16;&#x754C;</h1>
-        <p class="entry-gate-subtitle" id="entry-gate-status">&#x6B63;&#x5728;&#x4E3A;&#x4F60;&#x6253;&#x5F00;&#x4ECA;&#x65E5;&#x7684;&#x6545;&#x4E8B;&#x6A71;&#x7A97;</p>
-        <div class="entry-gate-track" aria-hidden="true">
-          <span class="entry-gate-bar"></span>
-        </div>
-        <div class="entry-gate-meta">
-          <span class="entry-gate-hint">&#x8FDB;&#x573A;&#x540E;&#x76F4;&#x63A5;&#x770B;&#x5230;&#x5B8C;&#x6574;&#x9996;&#x5C4F;</span>
-          <span class="entry-gate-value" id="entry-gate-value">0%</span>
+        <h1 class="entry-gate-title">
+          <span class="entry-gate-title-main">Castle</span>
+          <span class="entry-gate-title-sub">&#x6545;&#x4E8B;&#x6B63;&#x5728;&#x94FA;&#x5F00;</span>
+        </h1>
+        <p class="entry-gate-subtitle">&#x6536;&#x62E2;&#x5149;&#x5F71;&#x4E0E;&#x7247;&#x6BB5;&#xFF0C;&#x8BA9;&#x9996;&#x9875;&#x4EE5;&#x66F4;&#x5B8C;&#x6574;&#x7684;&#x59FF;&#x6001;&#x7F13;&#x7F13;&#x5C55;&#x5F00;&#x3002;</p>
+        <div class="entry-gate-progress">
+          <div class="entry-gate-meta">
+            <span class="entry-gate-status" id="entry-gate-status">&#x6B63;&#x5728;&#x70B9;&#x4EAE; Castle &#x7684;&#x95E8;&#x5385;</span>
+            <span class="entry-gate-value" id="entry-gate-value">0%</span>
+          </div>
+          <div class="entry-gate-track" aria-hidden="true">
+            <span class="entry-gate-bar"></span>
+            <span class="entry-gate-traveler">
+              <span class="entry-gate-icon-shell">
+                <svg class="entry-gate-icon" viewBox="0 0 64 64" aria-hidden="true">
+                  <path d="M12 54V24h8v-10h8v10h8v-10h8v10h8v30H12Z" />
+                  <path d="M24 54V40h16v14" />
+                  <path d="M20 28h8" />
+                  <path d="M36 28h8" />
+                  <path d="M18 18h12" />
+                  <path d="M34 18h12" />
+                </svg>
+              </span>
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -78,6 +117,6 @@
       </main>
     </div>
 
-    <script type="module" src="/assets/index.js?v=20260312-24"></script>
+    <script type="module" src="/assets/index.js?v=20260313-02"></script>
   </body>
 </html>
