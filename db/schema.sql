@@ -83,6 +83,7 @@ CREATE TABLE posts (
   summary varchar(300),
   content_md text NOT NULL,
   cover_media_id uuid,
+  sort_order integer NOT NULL DEFAULT 0,
   status post_status NOT NULL DEFAULT 'draft',
   is_pinned boolean NOT NULL DEFAULT false,
   published_at timestamptz,
@@ -102,6 +103,7 @@ CREATE TABLE posts (
 CREATE INDEX ix_posts_site_status_published ON posts (site_id, status, published_at DESC NULLS LAST);
 CREATE INDEX ix_posts_author_created ON posts (author_user_id, created_at DESC);
 CREATE INDEX ix_posts_site_pinned_created ON posts (site_id, is_pinned DESC, created_at DESC);
+CREATE INDEX ix_posts_site_sort_order ON posts (site_id, sort_order ASC, created_at DESC);
 
 CREATE TABLE post_tags (
   post_id uuid NOT NULL,

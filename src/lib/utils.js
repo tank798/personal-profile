@@ -1,4 +1,4 @@
-﻿import crypto from 'node:crypto';
+import crypto from 'node:crypto';
 import { randomUUID } from 'node:crypto';
 import { env } from './env.js';
 
@@ -88,7 +88,7 @@ export function mapPostSummary(row, tags = [], coverImage = null) {
     tags,
     status: row.status,
     isPinned: row.is_pinned,
+    sortOrder: row.sort_order ?? 0,
     publishedAt: row.published_at,
   };
 }
-

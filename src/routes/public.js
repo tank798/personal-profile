@@ -1,4 +1,4 @@
-﻿import { Router } from 'express';
+import { Router } from 'express';
 import { asyncHandler, notFound } from '../lib/errors.js';
 import { query } from '../lib/db.js';
 import {
@@ -61,10 +61,10 @@ publicRouter.get(
 
     const listResult = await query(
       `
-        SELECT p.id, p.slug, p.title, p.summary, p.cover_media_id, p.status, p.is_pinned, p.published_at
+        SELECT p.id, p.slug, p.title, p.summary, p.cover_media_id, p.sort_order, p.status, p.is_pinned, p.published_at
         FROM posts p
         WHERE ${whereSql}
-        ORDER BY p.is_pinned DESC, p.published_at DESC NULLS LAST, p.created_at DESC
+        ORDER BY p.sort_order ASC, p.published_at DESC NULLS LAST, p.created_at DESC, p.id DESC
         LIMIT $${params.length - 1} OFFSET $${params.length}
       `,
       params
@@ -100,7 +100,7 @@ publicRouter.get(
 
     const postResult = await query(
       `
-        SELECT p.id, p.slug, p.title, p.summary, p.content_md, p.cover_media_id, p.status, p.is_pinned,
+        SELECT p.id, p.slug, p.title, p.summary, p.content_md, p.cover_media_id, p.sort_order, p.status, p.is_pinned,
                p.published_at, p.created_at, p.updated_at
         FROM posts p
         WHERE p.site_id = $1 AND p.id = $2 AND p.status = 'published'

@@ -1,4 +1,4 @@
-﻿import fs from 'node:fs/promises';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { hashPassword } from './auth.js';
@@ -45,16 +45,47 @@ export async function waitForDatabase(maxAttempts = 20, delayMs = 2000) {
   throw lastError;
 }
 
-export async function ensureSchema() {
-  const existsResult = await query(`SELECT to_regclass('public.users') AS users_table`);
-  if (existsResult.rows[0]?.users_table) {
+async function ensurePostSortOrderColumn() {
+  const postsTableResult = await query(`SELECT to_regclass('public.posts') AS posts_table`);
+  if (!postsTableResult.rows[0]?.posts_table) {
     return;
   }
 
-  let schemaSql = await fs.readFile(schemaPath, 'utf8');
-  schemaSql = schemaSql.replace(/^\uFEFF/, '');
-  await query(schemaSql);
-  console.log('Database schema initialized from db/schema.sql');
+  await query('ALTER TABLE posts ADD COLUMN IF NOT EXISTS sort_order integer');
+  await query('ALTER TABLE posts ALTER COLUMN sort_order SET DEFAULT 0');
+
+  await query(`
+    WITH ranked AS (
+      SELECT
+        id,
+        ROW_NUMBER() OVER (
+          PARTITION BY site_id
+          ORDER BY is_pinned DESC, published_at DESC NULLS LAST, created_at DESC, id DESC
+        ) AS next_sort_order
+      FROM posts
+      WHERE sort_order IS NULL OR sort_order = 0
+    )
+    UPDATE posts p
+    SET sort_order = ranked.next_sort_order
+    FROM ranked
+    WHERE p.id = ranked.id
+  `);
+
+  await query('ALTER TABLE posts ALTER COLUMN sort_order SET NOT NULL');
+  await query('CREATE INDEX IF NOT EXISTS ix_posts_site_sort_order ON posts (site_id, sort_order ASC, created_at DESC)');
+}
+
+export async function ensureSchema() {
+  const existsResult = await query(`SELECT to_regclass('public.users') AS users_table`);
+
+  if (!existsResult.rows[0]?.users_table) {
+    let schemaSql = await fs.readFile(schemaPath, 'utf8');
+    schemaSql = schemaSql.replace(/^\uFEFF/, '');
+    await query(schemaSql);
+    console.log('Database schema initialized from db/schema.sql');
+  }
+
+  await ensurePostSortOrderColumn();
 }
 
 export async function ensureSingleOwner() {
@@ -119,4 +150,3 @@ export async function ensureSingleOwner() {
     );
   }
 }
-

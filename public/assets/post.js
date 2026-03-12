@@ -57,12 +57,17 @@ function renderGalleryCard(image, index, title) {
 function renderGallerySection(images, title) {
   if (!images.length) return '';
 
-  return `
-    <section class="post-gallery-section">
-      <div class="post-gallery-head">
-        <span class="post-gallery-label">\u5f71\u50cf\u8bb0\u5f55</span>
+  const meta = images.length > 1
+    ? `
+      <div class="post-gallery-meta">
         <span class="post-gallery-count" id="post-gallery-count">1 / ${images.length}</span>
       </div>
+    `
+    : '';
+
+  return `
+    <section class="post-gallery-section">
+      ${meta}
       <div class="post-gallery-wrap">
         <button class="detail-gallery-btn prev hidden" id="post-gallery-prev" type="button" aria-label="\u4e0a\u4e00\u5f20">
           <svg class="detail-gallery-icon" viewBox="0 0 24 24" aria-hidden="true">

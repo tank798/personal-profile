@@ -21,6 +21,7 @@ import {
   listMediaQuerySchema,
   postIdParamSchema,
   publishPostSchema,
+  reorderPostsSchema,
   updatePostSchema,
   updateProfileSchema,
   updateSiteSchema,
@@ -172,6 +173,17 @@ adminRouter.post(
     const publishedAt = status === 'published' ? new Date().toISOString() : null;
 
     const post = await withTransaction(async (client) => {
+      const sortOrderResult = await client.query(
+        `
+          SELECT COALESCE(MAX(sort_order), 0) + 1 AS next_sort_order
+          FROM posts
+          WHERE site_id = $1
+        `,
+        [current.site_id]
+      );
+
+      const nextSortOrder = Number(sortOrderResult.rows[0]?.next_sort_order || 1);
+
       const insertResult = await client.query(
         `
           INSERT INTO posts (
@@ -182,11 +194,12 @@ adminRouter.post(
             summary,
             content_md,
             cover_media_id,
+            sort_order,
             status,
             is_pinned,
             published_at
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
           RETURNING *
         `,
         [
@@ -197,6 +210,7 @@ adminRouter.post(
           input.summary ?? null,
           input.contentMd ?? '',
           input.coverMediaId ?? null,
+          nextSortOrder,
           status,
           input.isPinned ?? false,
           publishedAt,
@@ -268,7 +282,7 @@ adminRouter.get(
         SELECT *
         FROM posts p
         WHERE ${whereSql}
-        ORDER BY p.created_at DESC
+        ORDER BY p.sort_order ASC, p.created_at DESC, p.id DESC
         LIMIT $${params.length - 1} OFFSET $${params.length}
       `,
       params
@@ -450,6 +464,49 @@ adminRouter.put(
       createdAt: post.created_at,
       updatedAt: post.updated_at,
     });
+  })
+);
+
+adminRouter.post(
+  '/admin/posts/reorder',
+  asyncHandler(async (req, res) => {
+    const { postIds } = validate(reorderPostsSchema, req.body ?? {});
+
+    const ownedResult = await query(
+      `
+        SELECT id
+        FROM posts
+        WHERE author_user_id = $1
+        ORDER BY sort_order ASC, created_at DESC, id DESC
+      `,
+      [req.user.id]
+    );
+
+    if (ownedResult.rowCount !== postIds.length) {
+      throw badRequest('Please submit all posts when reordering');
+    }
+
+    const ownedIds = new Set(ownedResult.rows.map((row) => row.id));
+    const uniqueIds = new Set(postIds);
+
+    if (uniqueIds.size !== postIds.length || postIds.some((id) => !ownedIds.has(id))) {
+      throw badRequest('Invalid post order payload');
+    }
+
+    await withTransaction(async (client) => {
+      for (const [index, id] of postIds.entries()) {
+        await client.query(
+          `
+            UPDATE posts
+            SET sort_order = $1
+            WHERE id = $2 AND author_user_id = $3
+          `,
+          [index + 1, id, req.user.id]
+        );
+      }
+    });
+
+    res.json({ ok: true });
   })
 );
 

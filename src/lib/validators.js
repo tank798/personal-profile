@@ -84,6 +84,10 @@ export const listMediaQuerySchema = paginationQuerySchema.extend({
   purpose: z.enum(['avatar', 'cover', 'post', 'site']).optional(),
 });
 
+export const reorderPostsSchema = z.object({
+  postIds: z.array(uuidSchema).min(1).max(100),
+});
+
 export const publishPostSchema = z.object({
   publishedAt: z.string().datetime().optional(),
 });

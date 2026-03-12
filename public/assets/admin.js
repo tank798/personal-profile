@@ -59,6 +59,10 @@ const state = {
   isUploadingPostImages: false,
   draggingPostImageId: null,
   draggingPostPointerId: null,
+  draggingListPostId: null,
+  draggingListPointerId: null,
+  postOrderDirty: false,
+  isSavingPostOrder: false,
 };
 
 const cropState = {
@@ -293,6 +297,102 @@ function statusBadge(status) {
   return `<span class="badge ${meta.className}">${meta.label}</span>`;
 }
 
+function movePostListItem(draggedId, targetId, insertAfter) {
+  if (!draggedId || !targetId || draggedId === targetId) return false;
+
+  const items = [...state.posts];
+  const fromIndex = items.findIndex((item) => item.id === draggedId);
+  const targetIndex = items.findIndex((item) => item.id === targetId);
+  if (fromIndex < 0 || targetIndex < 0) return false;
+
+  const [dragged] = items.splice(fromIndex, 1);
+  const nextTargetIndex = items.findIndex((item) => item.id === targetId);
+  if (nextTargetIndex < 0) return false;
+
+  items.splice(insertAfter ? nextTargetIndex + 1 : nextTargetIndex, 0, dragged);
+
+  const changed = items.some((item, index) => item.id !== state.posts[index]?.id);
+  if (!changed) return false;
+
+  state.posts = items;
+  renderPostList();
+  return true;
+}
+
+async function persistPostOrder() {
+  if (!state.posts.length) return;
+
+  state.isSavingPostOrder = true;
+  renderPostList();
+
+  try {
+    await apiFetch('/admin/posts/reorder', {
+      method: 'POST',
+      auth: true,
+      body: { postIds: state.posts.map((item) => item.id) },
+    });
+
+    state.posts = state.posts.map((post, index) => ({
+      ...post,
+      sortOrder: index + 1,
+    }));
+
+    showToast('\u5e16\u5b50\u5c55\u793a\u987a\u5e8f\u5df2\u66f4\u65b0\u3002');
+  } catch (error) {
+    await loadPosts();
+    throw error;
+  } finally {
+    state.isSavingPostOrder = false;
+    renderPostList();
+  }
+}
+
+function startPostListSort(postId, pointerId) {
+  if (!postId || state.isSavingPostOrder) return;
+
+  state.draggingListPostId = postId;
+  state.draggingListPointerId = pointerId;
+  state.postOrderDirty = false;
+  document.body.classList.add('is-sorting-posts');
+  renderPostList();
+}
+
+function finishPostListSort(pointerId = null) {
+  if (!state.draggingListPostId) return;
+  if (pointerId !== null && state.draggingListPointerId !== pointerId) return;
+
+  const changed = state.postOrderDirty;
+
+  state.draggingListPostId = null;
+  state.draggingListPointerId = null;
+  state.postOrderDirty = false;
+  document.body.classList.remove('is-sorting-posts');
+  renderPostList();
+
+  if (changed) {
+    persistPostOrder().catch((error) => {
+      showToast(error.message || '\u5e16\u5b50\u987a\u5e8f\u4fdd\u5b58\u5931\u8d25');
+    });
+  }
+}
+
+function handlePostListSortMove(event) {
+  if (!state.draggingListPostId || state.draggingListPointerId !== event.pointerId) return;
+
+  event.preventDefault();
+
+  const targetCard = document.elementFromPoint(event.clientX, event.clientY)?.closest('.admin-post-item');
+  const targetId = targetCard?.dataset?.postId;
+  if (!targetId || targetId === state.draggingListPostId) return;
+
+  const rect = targetCard.getBoundingClientRect();
+  const insertAfter = event.clientY > rect.top + rect.height / 2;
+  const changed = movePostListItem(state.draggingListPostId, targetId, insertAfter);
+  if (changed) {
+    state.postOrderDirty = true;
+  }
+}
+
 function renderPostList() {
   if (!state.posts.length) {
     postListEl.innerHTML = '<div class="empty-block">\u8fd8\u6ca1\u6709\u5e16\u5b50\uff0c\u5148\u521b\u5efa\u7b2c\u4e00\u7bc7\u5427\u3002</div>';
@@ -301,21 +401,29 @@ function renderPostList() {
 
   postListEl.innerHTML = state.posts
     .map(
-      (post) => `
-      <article class="admin-post-item" data-post-id="${post.id}">
-        <div class="row-inline" style="justify-content:space-between">
-          <p class="item-title">${escapeHtml(post.title)}</p>
-          ${statusBadge(post.status)}
-        </div>
-        <p class="item-meta">\u66f4\u65b0\u65f6\u95f4\uff1a${escapeHtml(formatDateTime(post.updatedAt))}</p>
-        <div class="item-actions">
-          <button class="btn btn-secondary btn-sm" type="button" data-action="edit">\u7f16\u8f91</button>
-          ${
-            post.status === 'published'
-              ? '<button class="btn btn-ghost btn-sm" type="button" data-action="unpublish">\u8f6c\u4e3a\u8349\u7a3f</button>'
-              : '<button class="btn btn-primary btn-sm" type="button" data-action="publish">\u53d1\u5e03</button>'
-          }
-          <button class="btn btn-danger btn-sm" type="button" data-action="delete">\u5220\u9664</button>
+      (post, index) => `
+      <article class="admin-post-item ${state.draggingListPostId === post.id ? 'is-dragging' : ''}" data-post-id="${post.id}">
+        <button class="admin-post-handle" type="button" data-action="drag-post" aria-label="\u62d6\u52a8\u5e16\u5b50\u6392\u5e8f" ${state.isSavingPostOrder ? 'disabled' : ''}>
+          <span aria-hidden="true">::</span>
+        </button>
+        <div class="admin-post-body">
+          <div class="row-inline" style="justify-content:space-between">
+            <p class="item-title">${escapeHtml(post.title)}</p>
+            ${statusBadge(post.status)}
+          </div>
+          <p class="item-meta">
+            <span class="admin-post-order">\u5c55\u793a\u987a\u5e8f \u00b7 \u7b2c ${index + 1} \u4f4d</span>
+            <span>\u66f4\u65b0\u65f6\u95f4\uff1a${escapeHtml(formatDateTime(post.updatedAt))}</span>
+          </p>
+          <div class="item-actions">
+            <button class="btn btn-secondary btn-sm" type="button" data-action="edit">\u7f16\u8f91</button>
+            ${
+              post.status === 'published'
+                ? '<button class="btn btn-ghost btn-sm" type="button" data-action="unpublish">\u8f6c\u4e3a\u8349\u7a3f</button>'
+                : '<button class="btn btn-primary btn-sm" type="button" data-action="publish">\u53d1\u5e03</button>'
+            }
+            <button class="btn btn-danger btn-sm" type="button" data-action="delete">\u5220\u9664</button>
+          </div>
         </div>
       </article>
     `
@@ -325,7 +433,7 @@ function renderPostList() {
   for (const card of postListEl.querySelectorAll('.admin-post-item')) {
     card.addEventListener('click', async (event) => {
       const action = event.target?.dataset?.action;
-      if (!action) return;
+      if (!action || action === 'drag-post') return;
 
       const postId = card.dataset.postId;
       if (!postId) return;
@@ -375,7 +483,11 @@ function renderPostList() {
 async function loadPosts() {
   postListEl.innerHTML = '<div class="loading-block">\u52a0\u8f7d\u4e2d...</div>';
   const data = await apiFetch('/admin/posts?page=1&pageSize=50', { auth: true });
-  state.posts = data.items || [];
+  state.posts = (data.items || []).map((item, index) => ({
+    ...item,
+    sortOrder: item.sortOrder ?? index + 1,
+  }));
+  state.postOrderDirty = false;
   renderPostList();
 }
 
@@ -827,9 +939,26 @@ function wireEvents() {
     startPostImageSort(mediaId, event.pointerId);
   });
 
+  postListEl.addEventListener('pointerdown', (event) => {
+    const trigger = event.target?.closest('[data-action="drag-post"]');
+    if (!trigger || state.isSavingPostOrder) return;
+
+    const card = trigger.closest('[data-post-id]');
+    const postId = card?.dataset?.postId;
+    if (!postId) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    startPostListSort(postId, event.pointerId);
+  });
+
   window.addEventListener('pointermove', handlePostImageSortMove);
   window.addEventListener('pointerup', (event) => finishPostImageSort(event.pointerId));
   window.addEventListener('pointercancel', (event) => finishPostImageSort(event.pointerId));
+
+  window.addEventListener('pointermove', handlePostListSortMove);
+  window.addEventListener('pointerup', (event) => finishPostListSort(event.pointerId));
+  window.addEventListener('pointercancel', (event) => finishPostListSort(event.pointerId));
 
   wireCropEvents();
 }

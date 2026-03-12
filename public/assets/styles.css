@@ -526,16 +526,9 @@ h3 {
 }
 
 .post-detail-date {
-  width: fit-content;
-  display: inline-flex;
-  align-items: center;
-  min-height: 34px;
-  padding: 0 14px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--brand-primary) 18%, var(--line));
-  background: rgba(255, 250, 244, 0.86);
-  color: var(--brand-primary);
-  font-size: 0.86rem;
+  display: inline-block;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
   letter-spacing: 0.08em;
 }
 
@@ -598,8 +591,13 @@ h3 {
 
 .post-gallery-section {
   display: grid;
-  gap: 14px;
+  gap: 12px;
   padding-top: 4px;
+}
+
+.post-gallery-meta {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .post-gallery-head {
@@ -926,11 +924,57 @@ select {
 
 .admin-post-item {
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 14px;
   padding: 10px;
-  background: rgba(255, 253, 249, 0.75);
+  background: rgba(255, 253, 249, 0.78);
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, opacity 180ms ease;
+}
+
+.admin-post-item.is-dragging {
+  opacity: 0.76;
+  border-style: dashed;
+  box-shadow: 0 10px 22px rgba(107, 79, 58, 0.12);
+  transform: scale(0.992);
+}
+
+.admin-post-body {
+  min-width: 0;
   display: grid;
   gap: 7px;
+}
+
+.admin-post-handle {
+  width: 40px;
+  min-height: 104px;
+  border: 1px solid color-mix(in srgb, var(--brand-primary) 16%, var(--line));
+  border-radius: 12px;
+  background: rgba(255, 250, 244, 0.92);
+  color: var(--brand-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.admin-post-handle:active {
+  cursor: grabbing;
+}
+
+.admin-post-handle[disabled] {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.admin-post-handle span {
+  font-size: 1.08rem;
+  letter-spacing: 0.12em;
+  transform: rotate(90deg);
 }
 
 .item-title {
@@ -943,6 +987,13 @@ select {
   font-size: 0.8rem;
   color: var(--text-secondary);
   margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-post-order {
+  color: var(--brand-primary);
 }
 
 .item-actions {
@@ -1115,6 +1166,10 @@ select {
 }
 
 body.is-sorting-images {
+  user-select: none;
+}
+
+body.is-sorting-posts {
   user-select: none;
 }
 
@@ -1314,8 +1369,6 @@ body.is-sorting-images {
   }
 
   .post-detail-date {
-    min-height: 32px;
-    padding-inline: 12px;
     font-size: 0.82rem;
   }
 
