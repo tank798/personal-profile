@@ -36,7 +36,6 @@ const postFormEl = document.getElementById('post-form');
 const editingPostIdEl = document.getElementById('editing-post-id');
 const postTitleEl = document.getElementById('post-title');
 const postSlugEl = document.getElementById('post-slug');
-const postContentEl = document.getElementById('post-content');
 const postImagesFileEl = document.getElementById('post-images-file');
 const postImagesPreviewEl = document.getElementById('post-images-preview');
 const postStatusEl = document.getElementById('post-status');
@@ -58,6 +57,8 @@ const state = {
   posts: [],
   postImages: [],
   isUploadingPostImages: false,
+  draggingPostImageId: null,
+  draggingPostPointerId: null,
 };
 
 const cropState = {
@@ -382,7 +383,6 @@ function fillPostForm(post) {
   editingPostIdEl.value = post.id;
   postTitleEl.value = post.title || '';
   postSlugEl.value = post.slug || '';
-  postContentEl.value = post.contentMd || '';
   postStatusEl.value = post.status || 'draft';
   postPinnedEl.value = String(Boolean(post.isPinned));
   setPostImages(dedupeMediaList([post.coverImage, ...(post.images || [])].filter(Boolean)));
@@ -486,7 +486,6 @@ async function handlePostSubmit(event) {
   const payload = {
     title: postTitleEl.value.trim(),
     slug: postSlugEl.value.trim(),
-    contentMd: postContentEl.value,
     coverMediaId: imageMediaIds[0] || null,
     imageMediaIds,
     status: postStatusEl.value,
@@ -496,7 +495,6 @@ async function handlePostSubmit(event) {
   const editingId = editingPostIdEl.value;
 
   if (editingId) {
-    payload.summary = null;
     await apiFetch(`/admin/posts/${editingId}`, {
       method: 'PUT',
       auth: true,

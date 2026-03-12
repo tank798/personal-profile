@@ -195,7 +195,7 @@ adminRouter.post(
           input.slug,
           input.title,
           input.summary ?? null,
-          input.contentMd,
+          input.contentMd ?? '',
           input.coverMediaId ?? null,
           status,
           input.isPinned ?? false,
