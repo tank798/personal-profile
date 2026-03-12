@@ -98,12 +98,11 @@ async function bootstrapAppData() {
   }
 }
 
-app.listen(env.port, () => {
-  console.log(`API running on http://localhost:${env.port}`);
+app.listen(env.port, env.host, () => {
+  console.log(`API running on http://${env.host}:${env.port}`);
   bootstrapAppData().catch((error) => {
     bootstrapState = 'failed';
     bootstrapError = error?.message || 'bootstrap failed';
     console.error('Bootstrap fatal error:', error);
   });
 });
-

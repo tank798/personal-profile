@@ -1,4 +1,4 @@
-﻿import dotenv from 'dotenv';
+import dotenv from 'dotenv';
 
 dotenv.config();
 
@@ -22,6 +22,7 @@ function splitCsv(value, fallback = []) {
 
 export const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
+  host: process.env.HOST || (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1'),
   port: toInt(process.env.PORT, 8080),
   databaseUrl: process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/homepage_platform',
   jwtSecret: process.env.JWT_SECRET || 'dev-change-me',
@@ -42,4 +43,3 @@ export const env = {
   siteAboutMd: process.env.SITE_ABOUT_MD || '',
   syncAdminPasswordOnBoot: toBool(process.env.SYNC_ADMIN_PASSWORD_ON_BOOT, false),
 };
-
