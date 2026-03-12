@@ -181,6 +181,15 @@ function goPrev() {
   goToIndex(state.currentIndex - 1);
 }
 
+function resolveDeckCard(event) {
+  const directCard = event.target.closest?.('.deck-card');
+  if (directCard) return directCard;
+
+  if (typeof document.elementsFromPoint !== 'function') return null;
+
+  const stack = document.elementsFromPoint(event.clientX, event.clientY);
+  return stack.find((element) => element.classList?.contains('deck-card')) || null;
+}
 
 function bindDeckInteractions() {
   prevBtnEl.addEventListener('click', (event) => {
@@ -198,7 +207,7 @@ function bindDeckInteractions() {
   carouselEl.addEventListener('click', (event) => {
     if (Date.now() < state.suppressClickUntil) return;
 
-    const card = event.target.closest('.deck-card');
+    const card = resolveDeckCard(event);
     if (!card) return;
 
     const index = Number(card.dataset.index);
