@@ -45,10 +45,12 @@ function getPostImages(post) {
 
 function renderGalleryCard(image, index, title) {
   const alt = `${title || '\u5e16\u5b50\u56fe\u7247'} - \u7b2c${index + 1}\u5f20\u56fe\u7247`;
+  const src = escapeHtml(image.url);
   return `
-    <button class="detail-gallery-card" type="button" data-index="${index}" data-preview-src="${escapeHtml(image.url)}" aria-label="${escapeHtml(alt)}">
+    <button class="detail-gallery-card" type="button" data-index="${index}" data-preview-src="${src}" aria-label="${escapeHtml(alt)}">
       <span class="detail-gallery-media">
-        <img src="${escapeHtml(image.url)}" alt="${escapeHtml(alt)}" loading="lazy" />
+        <img class="detail-gallery-blur" src="${src}" alt="" aria-hidden="true" loading="lazy" />
+        <img class="detail-gallery-photo" src="${src}" alt="${escapeHtml(alt)}" loading="lazy" />
       </span>
     </button>
   `;
