@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import { randomUUID } from 'node:crypto';
 import { env } from './env.js';
+import { toDeliveredMediaUrl } from './media.js';
 
 export function toOffset(page, pageSize) {
   return (page - 1) * pageSize;
@@ -33,14 +34,21 @@ export function buildPublicMediaUrl(objectKey) {
   return `${env.objectStoragePublicBaseUrl}/${objectKey}`;
 }
 
-export function toUserBrief(row) {
+export function toUserBrief(row, options = {}) {
+  const { delivery = 'direct' } = options;
+
   return {
     id: row.id,
     email: row.email,
     username: row.username,
     displayName: row.display_name,
     bio: row.bio,
-    avatarUrl: row.avatar_url,
+    avatarUrl: toDeliveredMediaUrl({
+      mediaId: row.avatar_media_id ?? null,
+      url: row.avatar_url,
+      delivery,
+      isInline: row.avatar_is_inline,
+    }),
     avatarMediaId: row.avatar_media_id ?? null,
   };
 }
@@ -56,10 +64,17 @@ export function toSite(row) {
   };
 }
 
-export function mapMedia(row) {
+export function mapMedia(row, options = {}) {
+  const { delivery = 'direct' } = options;
+
   return {
     id: row.id,
-    url: row.url,
+    url: toDeliveredMediaUrl({
+      mediaId: row.id,
+      url: row.url,
+      delivery,
+      isInline: row.is_inline,
+    }),
     objectKey: row.object_key,
     mimeType: row.mime_type,
     sizeBytes: row.size_bytes,

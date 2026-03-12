@@ -96,6 +96,10 @@ export const postIdParamSchema = z.object({
   postId: uuidSchema,
 });
 
+export const mediaIdParamSchema = z.object({
+  mediaId: uuidSchema,
+});
+
 export function validate(schema, data) {
   const parsed = schema.safeParse(data);
   if (!parsed.success) {

@@ -3,6 +3,12 @@ import { query } from './db.js';
 import { mapMedia, mapTag } from './utils.js';
 import { env } from './env.js';
 
+function selectMediaUrlSql(column, delivery) {
+  return delivery === 'public'
+    ? `CASE WHEN ${column} LIKE 'data:%' THEN NULL ELSE ${column} END AS url, (${column} LIKE 'data:%') AS is_inline`
+    : `${column} AS url`;
+}
+
 export async function getCurrentUserWithSite(userId) {
   const result = await query(
     `
@@ -35,7 +41,19 @@ export async function getCurrentUserWithSite(userId) {
   return result.rows[0];
 }
 
-export async function getPrimarySite() {
+export async function getPrimarySite(options = {}) {
+  const { delivery = 'direct' } = options;
+  const avatarSelectSql = delivery === 'public'
+    ? `
+        u.avatar_media_id,
+        CASE WHEN am.url LIKE 'data:%' THEN NULL ELSE am.url END AS avatar_url,
+        (am.url LIKE 'data:%') AS avatar_is_inline
+      `
+    : `
+        u.avatar_media_id,
+        am.url AS avatar_url
+      `;
+
   const result = await query(
     `
       SELECT
@@ -49,7 +67,7 @@ export async function getPrimarySite() {
         u.username::text AS username,
         u.display_name,
         u.bio,
-        am.url AS avatar_url
+        ${avatarSelectSql}
       FROM sites s
       JOIN users u ON u.id = s.user_id
       LEFT JOIN media am ON am.id = u.avatar_media_id
@@ -126,7 +144,6 @@ export async function replacePostTags(postId, tagIds, client) {
   }
 }
 
-
 export async function replacePostImages(postId, mediaIds, client) {
   await client.query('DELETE FROM post_media WHERE post_id = $1', [postId]);
 
@@ -185,14 +202,15 @@ export async function getPostTags(postIds) {
   return map;
 }
 
-export async function getCoverMediaByIds(mediaIds) {
+export async function getCoverMediaByIds(mediaIds, options = {}) {
   if (!mediaIds.length) {
     return new Map();
   }
 
+  const { delivery = 'direct' } = options;
   const result = await query(
     `
-      SELECT id, url, object_key, mime_type, size_bytes, width, height, purpose, created_at
+      SELECT id, ${selectMediaUrlSql('url', delivery)}, object_key, mime_type, size_bytes, width, height, purpose, created_at
       FROM media
       WHERE id = ANY($1::uuid[])
     `,
@@ -201,15 +219,16 @@ export async function getCoverMediaByIds(mediaIds) {
 
   const map = new Map();
   for (const row of result.rows) {
-    map.set(row.id, mapMedia(row));
+    map.set(row.id, mapMedia(row, options));
   }
   return map;
 }
 
-export async function getPostImages(postId) {
+export async function getPostImages(postId, options = {}) {
+  const { delivery = 'direct' } = options;
   const result = await query(
     `
-      SELECT m.id, m.url, m.object_key, m.mime_type, m.size_bytes, m.width, m.height, m.purpose, m.created_at
+      SELECT m.id, ${selectMediaUrlSql('m.url', delivery)}, m.object_key, m.mime_type, m.size_bytes, m.width, m.height, m.purpose, m.created_at
       FROM post_media pm
       JOIN media m ON m.id = pm.media_id
       WHERE pm.post_id = $1
@@ -218,5 +237,5 @@ export async function getPostImages(postId) {
     [postId]
   );
 
-  return result.rows.map(mapMedia);
+  return result.rows.map((row) => mapMedia(row, options));
 }
