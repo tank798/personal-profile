@@ -716,15 +716,7 @@ h3 {
 }
 
 .detail-gallery-stage::before {
-  content: "";
-  position: absolute;
-  inset: -10px;
-  border-radius: 28px;
-  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.05) 46%, rgba(255, 255, 255, 0) 74%);
-  filter: blur(16px);
-  opacity: 0;
-  pointer-events: none;
-  z-index: 0;
+  content: none;
 }
 
 .detail-gallery-blur,
@@ -740,36 +732,28 @@ h3 {
 }
 
 .detail-gallery-blur {
-  filter: blur(18px) saturate(104%);
+  filter: blur(14px) saturate(100%);
   opacity: 0;
-  transform: scale(1.02);
+  transform: scale(1.01);
   pointer-events: none;
   z-index: 0;
 }
 
 .detail-gallery-photo {
   z-index: 1;
-  box-shadow: 0 14px 34px rgba(69, 50, 34, 0.1);
-}
-
-.detail-gallery-card:not(.is-active) .detail-gallery-stage::before {
-  opacity: 0.08;
+  box-shadow: 0 14px 30px rgba(69, 50, 34, 0.08);
 }
 
 .detail-gallery-card:not(.is-active) .detail-gallery-blur {
-  filter: blur(68px) saturate(88%);
-  opacity: 0.12;
-  transform: scale(1.12);
+  filter: blur(76px) saturate(82%);
+  opacity: 0.04;
+  transform: scale(1.14);
 }
 
 .detail-gallery-card:not(.is-active) .detail-gallery-photo {
-  filter: blur(30px) saturate(68%);
-  opacity: 0.05;
-  transform: scale(1.1);
-}
-
-.detail-gallery-card.is-active .detail-gallery-stage::before {
-  opacity: 0.5;
+  filter: blur(34px) saturate(62%);
+  opacity: 0.035;
+  transform: scale(1.12);
 }
 
 .detail-gallery-card.is-active .detail-gallery-blur {
@@ -777,7 +761,7 @@ h3 {
 }
 
 .detail-gallery-card.is-active .detail-gallery-photo {
-  box-shadow: 0 16px 38px rgba(69, 50, 34, 0.12);
+  box-shadow: 0 16px 34px rgba(69, 50, 34, 0.1);
 }
 
 .detail-gallery-card.gallery-hidden {
