@@ -383,8 +383,8 @@ async function loadPost(postId) {
 }
 
 async function loadRecommendations(currentId) {
-  const data = await apiFetch('/posts?page=1&pageSize=3');
-  const items = (data.items || []).filter((item) => item.id !== currentId).slice(0, 2);
+  const data = await apiFetch('/posts?page=1&pageSize=7');
+  const items = (data.items || []).filter((item) => item.id !== currentId).slice(0, 6);
 
   if (!items.length) {
     recommendListEl.innerHTML = '';
@@ -392,20 +392,37 @@ async function loadRecommendations(currentId) {
   }
 
   recommendListEl.innerHTML = `
-    <h2 style="margin:8px 0 0">\u66f4\u591a\u5185\u5bb9</h2>
-    ${items
-      .map(
-        (item) => `
-      <article class="post-card" data-post-id="${item.id}">
-        <h3 class="post-title">${escapeHtml(item.title)}</h3>
-        <div class="post-meta"><span>${escapeHtml(formatDate(item.publishedAt))}</span></div>
-      </article>
-    `
-      )
-      .join('')}
+    <div class="recommend-header">
+      <h2 class="recommend-title">\u66f4\u591a\u5185\u5bb9</h2>
+    </div>
+    <div class="recommend-grid">
+      ${items
+        .map((item) => {
+          const title = escapeHtml(item.title);
+          const imageUrl = item.coverImage?.url ? escapeHtml(item.coverImage.url) : '';
+          const dateText = item.publishedAt ? escapeHtml(formatDate(item.publishedAt)) : '';
+
+          return `
+            <button class="recommend-card" type="button" data-post-id="${item.id}" aria-label="\u67E5\u770B\u300A${title}\u300B">
+              <div class="recommend-card-media ${imageUrl ? '' : 'is-placeholder'}">
+                ${
+                  imageUrl
+                    ? `<img src="${imageUrl}" alt="${title}" loading="lazy" />`
+                    : '<span>\u7EE7\u7EED\u770B\u770B</span>'
+                }
+              </div>
+              <div class="recommend-card-body">
+                <h3 class="recommend-card-title">${title}</h3>
+                ${dateText ? `<p class="recommend-card-date">${dateText}</p>` : ''}
+              </div>
+            </button>
+          `;
+        })
+        .join('')}
+    </div>
   `;
 
-  for (const card of recommendListEl.querySelectorAll('.post-card')) {
+  for (const card of recommendListEl.querySelectorAll('.recommend-card')) {
     card.addEventListener('click', () => {
       const id = card.dataset.postId;
       if (!id) return;
