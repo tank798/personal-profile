@@ -123,6 +123,7 @@ function updateGallery() {
 
   const cards = [...galleryEl.querySelectorAll('.detail-gallery-card')];
   if (!cards.length) {
+    delete galleryEl.dataset.activeOrientation;
     prevBtnEl?.classList.add('hidden');
     nextBtnEl?.classList.add('hidden');
     if (countEl) countEl.textContent = '0 / 0';
@@ -165,6 +166,14 @@ function updateGallery() {
     card.classList.toggle('is-neighbor', absOffset === 1);
     card.tabIndex = absOffset === 0 ? 0 : -1;
     card.setAttribute('aria-hidden', offset === 0 ? 'false' : 'true');
+  }
+
+  const activeCard = cards.find((card) => card.classList.contains('is-active')) || cards[galleryState.currentIndex] || null;
+  const activeOrientation = activeCard?.dataset?.orientation;
+  if (activeOrientation) {
+    galleryEl.dataset.activeOrientation = activeOrientation;
+  } else {
+    delete galleryEl.dataset.activeOrientation;
   }
 
   if (countEl) {
@@ -223,6 +232,7 @@ function classifyGalleryImage(image) {
   }
 
   image.dataset.orientation = orientation;
+  image.closest('.detail-gallery-card')?.setAttribute('data-orientation', orientation);
 }
 
 function syncGalleryImageOrientation() {
@@ -235,8 +245,17 @@ function syncGalleryImageOrientation() {
       continue;
     }
 
-    image.addEventListener('load', () => classifyGalleryImage(image), { once: true });
+    image.addEventListener(
+      'load',
+      () => {
+        classifyGalleryImage(image);
+        updateGallery();
+      },
+      { once: true }
+    );
   }
+
+  updateGallery();
 }
 
 function bindGalleryInteractions() {
