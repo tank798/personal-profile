@@ -37,12 +37,12 @@ async function loadPost(postId) {
     ${primaryImage?.url ? `<img class="post-cover" data-preview-src="${escapeHtml(primaryImage.url)}" src="${escapeHtml(primaryImage.url)}" alt="${escapeHtml(post.title)}" />` : ''}
     <section class="post-body">${renderMarkdownBasic(post.contentMd || '')}</section>
     ${galleryImages.length ? `<section class="post-detail-images">${galleryImages
-      .map((image) => `<img data-preview-src="${escapeHtml(image.url)}" src="${escapeHtml(image.url)}" alt="甯栧瓙鍥剧墖" />`)
+      .map((image) => `<img data-preview-src="${escapeHtml(image.url)}" src="${escapeHtml(image.url)}" alt="\u5e16\u5b50\u56fe\u7247" />`)
       .join('')}</section>` : ''}
   `;
 
   bindImagePreview();
-  document.title = `${post.title} | 涓汉涓婚〉`;
+  document.title = `${post.title} | \u4e2a\u4eba\u4e3b\u9875`;
 
   return post;
 }
@@ -57,7 +57,7 @@ async function loadRecommendations(currentId) {
   }
 
   recommendListEl.innerHTML = `
-    <h2 style="margin:8px 0 0">鏇村鍐呭</h2>
+    <h2 style="margin:8px 0 0">\u66f4\u591a\u5185\u5bb9</h2>
     ${items
       .map(
         (item) => `
@@ -82,7 +82,7 @@ async function loadRecommendations(currentId) {
 async function boot() {
   const postId = queryParam('postId');
   if (!postId) {
-    postDetailEl.innerHTML = '<div class="empty-block">缂哄皯甯栧瓙鍙傛暟銆?/div>';
+    postDetailEl.innerHTML = '<div class="empty-block">\u7f3a\u5c11\u5e16\u5b50\u53c2\u6570\u3002</div>';
     return;
   }
 
@@ -98,6 +98,6 @@ async function boot() {
 
 boot().catch((error) => {
   console.error(error);
-  showToast(error.message || '鍔犺浇澶辫触');
-  postDetailEl.innerHTML = '<div class="empty-block">鍐呭鍔犺浇澶辫触锛岃绋嶅悗鍐嶈瘯銆?/div>';
+  showToast(error.message || '\u52a0\u8f7d\u5931\u8d25');
+  postDetailEl.innerHTML = '<div class="empty-block">\u5185\u5bb9\u52a0\u8f7d\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5\u3002</div>';
 });
