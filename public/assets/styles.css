@@ -1464,8 +1464,13 @@ body.is-sorting-posts {
     height: 124px;
   }
 
+  .profile-main {
+    width: 100%;
+  }
+
   .profile-about {
-    max-width: 28ch;
+    max-width: 100%;
+    width: 100%;
   }
 
   .content-head {
@@ -1713,5 +1718,15 @@ body.is-sorting-posts {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .profile-about {
+    max-width: min(100%, 31rem);
+  }
+
+  .profile-line {
+    white-space: normal;
   }
 }
