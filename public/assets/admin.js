@@ -111,10 +111,19 @@ function renderPostImagesPreview() {
   postImagesPreviewEl.innerHTML = state.postImages
     .map(
       (media, index) => `
-      <article class="upload-multi-item ${index === 0 ? 'is-primary' : ''}" data-media-id="${media.id}">
-        <span class="upload-multi-label">${index === 0 ? '\u4e3b\u56fe' : '\u56fe\u7247'}</span>
-        <img src="${escapeHtml(media.url)}" alt="\u5e16\u5b50\u56fe\u7247" />
-        <button class="btn btn-danger btn-sm" type="button" data-action="remove-image">\u5220\u9664</button>
+      <article class="upload-multi-item ${index === 0 ? 'is-primary' : ''} ${state.draggingPostImageId === media.id ? 'is-dragging' : ''}" data-media-id="${media.id}">
+        <button class="upload-multi-handle" type="button" data-action="drag-image" aria-label="\u62d6\u52a8\u6392\u5e8f">
+          <span aria-hidden="true">::</span>
+        </button>
+        <img class="upload-multi-thumb" src="${escapeHtml(media.url)}" alt="\u5e16\u5b50\u56fe\u7247" />
+        <div class="upload-multi-meta">
+          <div class="upload-multi-meta-top">
+            <span class="upload-multi-label">${index === 0 ? '\u4e3b\u56fe' : `\u56fe\u7247 ${index + 1}`}</span>
+            <span class="upload-multi-order">\u7b2c ${index + 1} \u5f20</span>
+          </div>
+          <p class="upload-multi-hint">${index === 0 ? '\u9996\u9875\u548c\u8be6\u60c5\u9875\u4f1a\u9ed8\u8ba4\u4f7f\u7528\u8fd9\u5f20\u56fe\u3002' : '\u62d6\u52a8\u5230\u66f4\u524d\u9762\uff0c\u5c31\u4f1a\u6210\u4e3a\u4e3b\u56fe\u3002'}</p>
+        </div>
+        <button class="btn btn-danger btn-sm upload-multi-remove" type="button" data-action="remove-image">\u5220\u9664</button>
       </article>
     `
     )
@@ -124,6 +133,61 @@ function renderPostImagesPreview() {
 function setPostImages(items) {
   state.postImages = dedupeMediaList(items);
   renderPostImagesPreview();
+}
+
+function movePostImage(draggedId, targetId, insertAfter) {
+  if (!draggedId || !targetId || draggedId === targetId) return false;
+
+  const items = [...state.postImages];
+  const fromIndex = items.findIndex((item) => item.id === draggedId);
+  const targetIndex = items.findIndex((item) => item.id === targetId);
+  if (fromIndex < 0 || targetIndex < 0) return false;
+
+  const [dragged] = items.splice(fromIndex, 1);
+  const nextTargetIndex = items.findIndex((item) => item.id === targetId);
+  if (nextTargetIndex < 0) return false;
+
+  items.splice(insertAfter ? nextTargetIndex + 1 : nextTargetIndex, 0, dragged);
+
+  const changed = items.some((item, index) => item.id !== state.postImages[index]?.id);
+  if (!changed) return false;
+
+  state.postImages = items;
+  renderPostImagesPreview();
+  return true;
+}
+
+function startPostImageSort(mediaId, pointerId) {
+  if (!mediaId) return;
+
+  state.draggingPostImageId = mediaId;
+  state.draggingPostPointerId = pointerId;
+  document.body.classList.add('is-sorting-images');
+  renderPostImagesPreview();
+}
+
+function finishPostImageSort(pointerId = null) {
+  if (!state.draggingPostImageId) return;
+  if (pointerId !== null && state.draggingPostPointerId !== pointerId) return;
+
+  state.draggingPostImageId = null;
+  state.draggingPostPointerId = null;
+  document.body.classList.remove('is-sorting-images');
+  renderPostImagesPreview();
+}
+
+function handlePostImageSortMove(event) {
+  if (!state.draggingPostImageId || state.draggingPostPointerId !== event.pointerId) return;
+
+  event.preventDefault();
+
+  const targetCard = document.elementFromPoint(event.clientX, event.clientY)?.closest('.upload-multi-item');
+  const targetId = targetCard?.dataset?.mediaId;
+  if (!targetId || targetId === state.draggingPostImageId) return;
+
+  const rect = targetCard.getBoundingClientRect();
+  const insertAfter = event.clientY > rect.top + rect.height / 2;
+  movePostImage(state.draggingPostImageId, targetId, insertAfter);
 }
 
 function getLastLoginEmail() {
@@ -752,6 +816,22 @@ function wireEvents() {
 
     setPostImages(state.postImages.filter((item) => item.id !== mediaId));
   });
+
+  postImagesPreviewEl.addEventListener('pointerdown', (event) => {
+    const trigger = event.target?.closest('[data-action="drag-image"]');
+    if (!trigger) return;
+
+    const card = trigger.closest('[data-media-id]');
+    const mediaId = card?.dataset?.mediaId;
+    if (!mediaId) return;
+
+    event.preventDefault();
+    startPostImageSort(mediaId, event.pointerId);
+  });
+
+  window.addEventListener('pointermove', handlePostImageSortMove);
+  window.addEventListener('pointerup', (event) => finishPostImageSort(event.pointerId));
+  window.addEventListener('pointercancel', (event) => finishPostImageSort(event.pointerId));
 
   wireCropEvents();
 }

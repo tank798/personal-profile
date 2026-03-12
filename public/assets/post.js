@@ -1,4 +1,4 @@
-import { apiFetch, escapeHtml, formatDate, queryParam, renderMarkdownBasic, showToast } from './common.js';
+import { apiFetch, escapeHtml, formatDate, queryParam, showToast } from './common.js';
 
 const postDetailEl = document.getElementById('post-detail');
 const recommendListEl = document.getElementById('recommend-list');
@@ -356,7 +356,7 @@ function initGallery(images) {
 async function loadPost(postId) {
   const post = await apiFetch(`/posts/${encodeURIComponent(postId)}`);
   const images = getPostImages(post);
-  const bodyHtml = renderMarkdownBasic(post.contentMd || '');
+  
   const dateLabel = formatDate(post.publishedAt || post.createdAt);
 
   postDetailEl.innerHTML = `
@@ -364,7 +364,7 @@ async function loadPost(postId) {
       <h1 class="post-title">${escapeHtml(post.title)}</h1>
       <time class="post-detail-date" datetime="${escapeHtml(post.publishedAt || post.createdAt || '')}">${escapeHtml(dateLabel)}</time>
     </header>
-    <section class="post-body">${bodyHtml || '<p class="post-body-empty">\u8fd8\u6ca1\u6709\u5199\u6b63\u6587\u3002</p>'}</section>
+    
     ${post.tags?.length ? `<div class="post-detail-tags">${renderTags(post.tags)}</div>` : ''}
     ${renderGallerySection(images, post.title)}
   `;
