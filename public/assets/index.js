@@ -21,7 +21,6 @@ const state = {
 const profileNameEl = document.getElementById('profile-name');
 const profileAboutEl = document.getElementById('profile-about');
 const avatarWrapEl = document.getElementById('avatar-wrap');
-const carouselWrapEl = document.getElementById('post-carousel-wrap');
 const carouselEl = document.getElementById('post-carousel');
 const prevBtnEl = document.getElementById('carousel-prev');
 const nextBtnEl = document.getElementById('carousel-next');
@@ -121,14 +120,12 @@ function ensureCardImageLoaded(card, absOffset) {
 function updateDeck() {
   const cards = [...carouselEl.querySelectorAll('.deck-card')];
   if (!cards.length) {
-    carouselWrapEl?.style.removeProperty('--carousel-btn-top');
     prevBtnEl.classList.add('hidden');
     nextBtnEl.classList.add('hidden');
     return;
   }
 
   const metrics = getDeckMetrics();
-  let activeCard = null;
 
   for (const card of cards) {
     const index = Number(card.dataset.index);
@@ -164,17 +161,6 @@ function updateDeck() {
     card.tabIndex = offset === 0 ? 0 : -1;
     card.setAttribute('aria-hidden', offset === 0 ? 'false' : 'true');
     ensureCardImageLoaded(card, absOffset);
-
-    if (offset === 0) {
-      activeCard = card;
-    }
-  }
-
-  if (activeCard && carouselWrapEl) {
-    const wrapRect = carouselWrapEl.getBoundingClientRect();
-    const activeRect = activeCard.getBoundingClientRect();
-    const buttonTop = activeRect.top - wrapRect.top + activeRect.height / 2;
-    carouselWrapEl.style.setProperty('--carousel-btn-top', `${buttonTop}px`);
   }
 
   if (cards.length <= 1) {
