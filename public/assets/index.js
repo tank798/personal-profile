@@ -16,6 +16,7 @@ const state = {
 const profileNameEl = document.getElementById('profile-name');
 const profileAboutEl = document.getElementById('profile-about');
 const avatarWrapEl = document.getElementById('avatar-wrap');
+const carouselWrapEl = document.getElementById('post-carousel-wrap');
 const carouselEl = document.getElementById('post-carousel');
 const prevBtnEl = document.getElementById('carousel-prev');
 const nextBtnEl = document.getElementById('carousel-next');

@@ -36,11 +36,7 @@ const postFormEl = document.getElementById('post-form');
 const editingPostIdEl = document.getElementById('editing-post-id');
 const postTitleEl = document.getElementById('post-title');
 const postSlugEl = document.getElementById('post-slug');
-const postSummaryEl = document.getElementById('post-summary');
 const postContentEl = document.getElementById('post-content');
-const coverFileEl = document.getElementById('cover-file');
-const coverMediaIdEl = document.getElementById('cover-media-id');
-const coverPreviewEl = document.getElementById('cover-preview');
 const postImagesFileEl = document.getElementById('post-images-file');
 const postImagesPreviewEl = document.getElementById('post-images-preview');
 const postStatusEl = document.getElementById('post-status');
@@ -61,7 +57,6 @@ const avatarCtx = avatarCropCanvasEl?.getContext('2d');
 const state = {
   posts: [],
   postImages: [],
-  isUploadingCover: false,
   isUploadingPostImages: false,
 };
 
@@ -80,7 +75,7 @@ const cropState = {
 function requireFile(inputEl) {
   const file = inputEl.files?.[0];
   if (!file) {
-    throw new Error('请先选择图片文件');
+    throw new Error('\u8bf7\u5148\u9009\u62e9\u56fe\u7247\u6587\u4ef6');
   }
   return file;
 }
@@ -91,6 +86,7 @@ function showPreview(el, url) {
     el.removeAttribute('src');
     return;
   }
+
   el.src = url;
   el.classList.remove('hidden');
 }
@@ -108,16 +104,17 @@ function dedupeMediaList(items) {
 
 function renderPostImagesPreview() {
   if (!state.postImages.length) {
-    postImagesPreviewEl.innerHTML = '<div class="hint">当前还没有上传帖子图片。</div>';
+    postImagesPreviewEl.innerHTML = '<div class="hint">\u5f53\u524d\u8fd8\u6ca1\u6709\u4e0a\u4f20\u5e16\u5b50\u56fe\u7247\u3002</div>';
     return;
   }
 
   postImagesPreviewEl.innerHTML = state.postImages
     .map(
-      (media) => `
-      <article class="upload-multi-item" data-media-id="${media.id}">
-        <img src="${escapeHtml(media.url)}" alt="帖子图片" />
-        <button class="btn btn-danger btn-sm" type="button" data-action="remove-image">删除</button>
+      (media, index) => `
+      <article class="upload-multi-item ${index === 0 ? 'is-primary' : ''}" data-media-id="${media.id}">
+        <span class="upload-multi-label">${index === 0 ? '\u4e3b\u56fe' : '\u56fe\u7247'}</span>
+        <img src="${escapeHtml(media.url)}" alt="\u5e16\u5b50\u56fe\u7247" />
+        <button class="btn btn-danger btn-sm" type="button" data-action="remove-image">\u5220\u9664</button>
       </article>
     `
     )
@@ -166,12 +163,11 @@ async function uploadMedia(file, purpose) {
     });
 
     if (!putResp.ok) {
-      throw new Error(`上传失败(${putResp.status})`);
+      throw new Error(`\u4e0a\u4f20\u5931\u8d25\uff08${putResp.status}\uff09`);
     }
   } catch {
-    // Dev fallback: store as data URL when object storage is not configured.
     uploadedUrl = await readFileAsDataUrl(file);
-    showToast('未检测到对象存储，已切换为本地演示上传模式');
+    showToast('\u672a\u68c0\u6d4b\u5230\u5bf9\u8c61\u5b58\u50a8\uff0c\u5df2\u5207\u6362\u4e3a\u672c\u5730\u6f14\u793a\u4e0a\u4f20\u6a21\u5f0f\u3002');
   }
 
   const dimensions = file.type.startsWith('image/') ? await getImageDimensions(file) : {};
@@ -211,21 +207,30 @@ function openLogin() {
 async function fetchMe() {
   const me = await apiFetch('/me', { auth: true });
 
-  adminTitleEl.textContent = `${me.user.displayName || '我的'} · 内容管理`;
-
+  adminTitleEl.textContent = `${me.user.displayName || '\u6211\u7684'} \u00b7 \u5185\u5bb9\u7ba1\u7406`;
   displayNameEl.value = me.user.displayName || '';
   aboutMdEl.value = me.site.aboutMd || '';
   avatarMediaIdEl.value = me.user.avatarMediaId || '';
   showPreview(avatarPreviewEl, me.user.avatarUrl || '');
 }
 
+function getStatusMeta(status) {
+  const map = {
+    published: { className: 'published', label: '\u5df2\u53d1\u5e03' },
+    draft: { className: 'draft', label: '\u8349\u7a3f' },
+    archived: { className: 'archived', label: '\u5f52\u6863' },
+  };
+  return map[status] || map.draft;
+}
+
 function statusBadge(status) {
-  return `<span class="badge ${escapeHtml(status)}">${escapeHtml(status)}</span>`;
+  const meta = getStatusMeta(status);
+  return `<span class="badge ${meta.className}">${meta.label}</span>`;
 }
 
 function renderPostList() {
   if (!state.posts.length) {
-    postListEl.innerHTML = '<div class="empty-block">还没有帖子，先创建第一篇吧。</div>';
+    postListEl.innerHTML = '<div class="empty-block">\u8fd8\u6ca1\u6709\u5e16\u5b50\uff0c\u5148\u521b\u5efa\u7b2c\u4e00\u7bc7\u5427\u3002</div>';
     return;
   }
 
@@ -237,15 +242,15 @@ function renderPostList() {
           <p class="item-title">${escapeHtml(post.title)}</p>
           ${statusBadge(post.status)}
         </div>
-        <p class="item-meta">更新时间：${escapeHtml(formatDateTime(post.updatedAt))}</p>
+        <p class="item-meta">\u66f4\u65b0\u65f6\u95f4\uff1a${escapeHtml(formatDateTime(post.updatedAt))}</p>
         <div class="item-actions">
-          <button class="btn btn-secondary btn-sm" type="button" data-action="edit">编辑</button>
+          <button class="btn btn-secondary btn-sm" type="button" data-action="edit">\u7f16\u8f91</button>
           ${
             post.status === 'published'
-              ? '<button class="btn btn-ghost btn-sm" type="button" data-action="unpublish">转草稿</button>'
-              : '<button class="btn btn-primary btn-sm" type="button" data-action="publish">发布</button>'
+              ? '<button class="btn btn-ghost btn-sm" type="button" data-action="unpublish">\u8f6c\u4e3a\u8349\u7a3f</button>'
+              : '<button class="btn btn-primary btn-sm" type="button" data-action="publish">\u53d1\u5e03</button>'
           }
-          <button class="btn btn-danger btn-sm" type="button" data-action="delete">删除</button>
+          <button class="btn btn-danger btn-sm" type="button" data-action="delete">\u5220\u9664</button>
         </div>
       </article>
     `
@@ -272,10 +277,10 @@ function renderPostList() {
         }
 
         if (action === 'delete') {
-          const ok = window.confirm(`确认删除《${post.title}》吗？`);
+          const ok = window.confirm(`\u786e\u8ba4\u5220\u9664\u300a${post.title}\u300b\u5417\uff1f`);
           if (!ok) return;
           await apiFetch(`/admin/posts/${postId}`, { method: 'DELETE', auth: true });
-          showToast('已删除');
+          showToast('\u5df2\u5220\u9664\u3002');
           await loadPosts();
           if (editingPostIdEl.value === postId) {
             resetPostForm();
@@ -285,25 +290,25 @@ function renderPostList() {
 
         if (action === 'publish') {
           await apiFetch(`/admin/posts/${postId}/publish`, { method: 'POST', auth: true, body: {} });
-          showToast('发布成功');
+          showToast('\u53d1\u5e03\u6210\u529f\u3002');
           await loadPosts();
           return;
         }
 
         if (action === 'unpublish') {
           await apiFetch(`/admin/posts/${postId}/unpublish`, { method: 'POST', auth: true, body: {} });
-          showToast('已转为草稿');
+          showToast('\u5df2\u8f6c\u4e3a\u8349\u7a3f\u3002');
           await loadPosts();
         }
       } catch (error) {
-        showToast(error.message || '操作失败');
+        showToast(error.message || '\u64cd\u4f5c\u5931\u8d25');
       }
     });
   }
 }
 
 async function loadPosts() {
-  postListEl.innerHTML = '<div class="loading-block">加载中...</div>';
+  postListEl.innerHTML = '<div class="loading-block">\u52a0\u8f7d\u4e2d...</div>';
   const data = await apiFetch('/admin/posts?page=1&pageSize=50', { auth: true });
   state.posts = data.items || [];
   renderPostList();
@@ -313,14 +318,11 @@ function fillPostForm(post) {
   editingPostIdEl.value = post.id;
   postTitleEl.value = post.title || '';
   postSlugEl.value = post.slug || '';
-  postSummaryEl.value = post.summary || '';
   postContentEl.value = post.contentMd || '';
   postStatusEl.value = post.status || 'draft';
   postPinnedEl.value = String(Boolean(post.isPinned));
-  coverMediaIdEl.value = post.coverMediaId || '';
-  showPreview(coverPreviewEl, post.coverImage?.url || '');
-  setPostImages(post.images || []);
-  savePostBtnEl.textContent = '更新帖子';
+  setPostImages(dedupeMediaList([post.coverImage, ...(post.images || [])].filter(Boolean)));
+  savePostBtnEl.textContent = '\u66f4\u65b0\u5e16\u5b50';
 }
 
 function resetPostForm() {
@@ -328,12 +330,9 @@ function resetPostForm() {
   postFormEl.reset();
   postStatusEl.value = 'draft';
   postPinnedEl.value = 'false';
-  coverMediaIdEl.value = '';
-  showPreview(coverPreviewEl, '');
   setPostImages([]);
-  if (coverFileEl) coverFileEl.value = '';
   if (postImagesFileEl) postImagesFileEl.value = '';
-  savePostBtnEl.textContent = '保存帖子';
+  savePostBtnEl.textContent = '\u4fdd\u5b58\u5e16\u5b50';
 }
 
 async function handleLogin(event) {
@@ -350,7 +349,7 @@ async function handleLogin(event) {
   setLastLoginEmail(email);
   loginPasswordEl.value = '';
 
-  showToast('登录成功');
+  showToast('\u767b\u5f55\u6210\u529f\u3002');
   await initializeDashboard();
 }
 
@@ -369,18 +368,18 @@ async function initializeDashboardWithRetry() {
       if (error?.status === 401) {
         setToken('');
         openLogin();
-        showToast('登录状态失效，请重新登录');
+        showToast('\u767b\u5f55\u72b6\u6001\u5931\u6548\uff0c\u8bf7\u91cd\u65b0\u767b\u5f55\u3002');
         return false;
       }
 
       if (attempt < DASHBOARD_INIT_RETRY) {
-        showToast(`服务正在唤醒，自动重试(${attempt}/${DASHBOARD_INIT_RETRY - 1})...`);
+        showToast(`\u670d\u52a1\u6b63\u5728\u5524\u9192\uff0c\u81ea\u52a8\u91cd\u8bd5 ${attempt}/${DASHBOARD_INIT_RETRY - 1}...`);
         await sleep(2500 * attempt);
         continue;
       }
 
       openLogin();
-      showToast('服务响应较慢，请稍后再试');
+      showToast('\u670d\u52a1\u54cd\u5e94\u8f83\u6162\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5\u3002');
       return false;
     }
   }
@@ -406,28 +405,26 @@ async function handleProfileSubmit(event) {
   await apiFetch('/admin/site', {
     method: 'PUT',
     auth: true,
-    body: {
-      aboutMd,
-    },
+    body: { aboutMd },
   });
 
-  showToast('个人信息已保存');
+  showToast('\u4e2a\u4eba\u4fe1\u606f\u5df2\u4fdd\u5b58\u3002');
 }
 
 async function handlePostSubmit(event) {
   event.preventDefault();
 
-  if (state.isUploadingCover || state.isUploadingPostImages) {
-    throw new Error('图片仍在上传中，请稍后再保存帖子');
+  if (state.isUploadingPostImages) {
+    throw new Error('\u56fe\u7247\u4ecd\u5728\u4e0a\u4f20\u4e2d\uff0c\u8bf7\u7a0d\u540e\u518d\u4fdd\u5b58\u5e16\u5b50\u3002');
   }
 
+  const imageMediaIds = state.postImages.map((item) => item.id);
   const payload = {
     title: postTitleEl.value.trim(),
     slug: postSlugEl.value.trim(),
-    summary: postSummaryEl.value.trim() || undefined,
     contentMd: postContentEl.value,
-    coverMediaId: coverMediaIdEl.value || null,
-    imageMediaIds: state.postImages.map((item) => item.id),
+    coverMediaId: imageMediaIds[0] || null,
+    imageMediaIds,
     status: postStatusEl.value,
     isPinned: postPinnedEl.value === 'true',
   };
@@ -435,19 +432,20 @@ async function handlePostSubmit(event) {
   const editingId = editingPostIdEl.value;
 
   if (editingId) {
+    payload.summary = null;
     await apiFetch(`/admin/posts/${editingId}`, {
       method: 'PUT',
       auth: true,
       body: payload,
     });
-    showToast('帖子已更新');
+    showToast('\u5e16\u5b50\u5df2\u66f4\u65b0\u3002');
   } else {
     await apiFetch('/admin/posts', {
       method: 'POST',
       auth: true,
       body: payload,
     });
-    showToast('帖子已创建');
+    showToast('\u5e16\u5b50\u5df2\u521b\u5efa\u3002');
   }
 
   resetPostForm();
@@ -458,7 +456,7 @@ function createImageFromDataUrl(dataUrl) {
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error('头像读取失败，请更换图片重试'));
+    image.onerror = () => reject(new Error('\u5934\u50cf\u8bfb\u53d6\u5931\u8d25\uff0c\u8bf7\u66f4\u6362\u56fe\u7247\u540e\u91cd\u8bd5\u3002'));
     image.src = dataUrl;
   });
 }
@@ -493,7 +491,6 @@ function renderAvatarCropCanvas() {
   if (!cropState.image) return;
 
   const { width, height } = getDrawSize();
-
   avatarCtx.drawImage(cropState.image, cropState.drawX, cropState.drawY, width, height);
 
   const radius = AVATAR_CROP_SIZE / 2 - 6;
@@ -547,7 +544,7 @@ async function exportCroppedAvatarFile() {
   const blob = await new Promise((resolve, reject) => {
     exportCanvas.toBlob((value) => {
       if (!value) {
-        reject(new Error('头像裁剪失败'));
+        reject(new Error('\u5934\u50cf\u88c1\u526a\u5931\u8d25\u3002'));
         return;
       }
       resolve(value);
@@ -578,7 +575,6 @@ async function pickCroppedAvatar(file) {
 
   avatarZoomEl.value = '1';
   renderAvatarCropCanvas();
-
   avatarCropDialogEl.showModal();
 
   return new Promise((resolve) => {
@@ -594,32 +590,12 @@ async function handleAvatarUpload() {
   const media = await uploadMedia(processedFile, 'avatar');
   avatarMediaIdEl.value = media.id;
   showPreview(avatarPreviewEl, media.url);
-  showToast('头像上传完成，请点击“保存个人信息”');
-}
-
-async function handleCoverUpload() {
-  const file = requireFile(coverFileEl);
-
-  state.isUploadingCover = true;
-  coverFileEl.disabled = true;
-
-  try {
-    const media = await uploadMedia(file, 'cover');
-    coverMediaIdEl.value = media.id;
-    showPreview(coverPreviewEl, media.url);
-    showToast('封面已自动上传，保存帖子后生效');
-  } finally {
-    state.isUploadingCover = false;
-    coverFileEl.disabled = false;
-    coverFileEl.value = '';
-  }
+  showToast('\u5934\u50cf\u4e0a\u4f20\u5b8c\u6210\uff0c\u8bf7\u70b9\u51fb\u201c\u4fdd\u5b58\u4e2a\u4eba\u4fe1\u606f\u201d\u3002');
 }
 
 async function handlePostImagesUpload() {
   const files = Array.from(postImagesFileEl.files || []);
-  if (!files.length) {
-    return;
-  }
+  if (!files.length) return;
 
   state.isUploadingPostImages = true;
   postImagesFileEl.disabled = true;
@@ -633,7 +609,7 @@ async function handlePostImagesUpload() {
     }
 
     setPostImages([...state.postImages, ...uploadedItems]);
-    showToast(`已自动上传${uploadedItems.length}张图片，保存帖子后生效`);
+    showToast(`\u5df2\u81ea\u52a8\u4e0a\u4f20 ${uploadedItems.length} \u5f20\u56fe\u7247\uff0c\u7b2c\u4e00\u5f20\u4f1a\u4f5c\u4e3a\u5e16\u5b50\u4e3b\u56fe\u3002`);
   } finally {
     state.isUploadingPostImages = false;
     postImagesFileEl.disabled = false;
@@ -704,7 +680,7 @@ function wireCropEvents() {
       const cropped = await exportCroppedAvatarFile();
       closeCropDialog(cropped);
     } catch (error) {
-      showToast(error.message || '裁剪失败');
+      showToast(error.message || '\u88c1\u526a\u5931\u8d25');
     }
   });
 
@@ -730,18 +706,18 @@ function wireCropEvents() {
 
 function wireEvents() {
   loginFormEl.addEventListener('submit', (event) => {
-    handleLogin(event).catch((error) => showToast(error.message || '登录失败'));
+    handleLogin(event).catch((error) => showToast(error.message || '\u767b\u5f55\u5931\u8d25'));
   });
 
   logoutBtnEl.addEventListener('click', () => {
     setToken('');
     loginPasswordEl.value = '';
     openLogin();
-    showToast('已退出');
+    showToast('\u5df2\u9000\u51fa\u767b\u5f55\u3002');
   });
 
   profileFormEl.addEventListener('submit', (event) => {
-    handleProfileSubmit(event).catch((error) => showToast(error.message || '保存失败'));
+    handleProfileSubmit(event).catch((error) => showToast(error.message || '\u4fdd\u5b58\u5931\u8d25'));
   });
 
   postTitleEl.addEventListener('input', () => {
@@ -751,7 +727,7 @@ function wireEvents() {
   });
 
   postFormEl.addEventListener('submit', (event) => {
-    handlePostSubmit(event).catch((error) => showToast(error.message || '保存失败'));
+    handlePostSubmit(event).catch((error) => showToast(error.message || '\u4fdd\u5b58\u5931\u8d25'));
   });
 
   resetPostBtnEl.addEventListener('click', () => {
@@ -759,15 +735,11 @@ function wireEvents() {
   });
 
   uploadAvatarBtnEl.addEventListener('click', () => {
-    handleAvatarUpload().catch((error) => showToast(error.message || '上传失败'));
-  });
-
-  coverFileEl.addEventListener('change', () => {
-    handleCoverUpload().catch((error) => showToast(error.message || '上传失败'));
+    handleAvatarUpload().catch((error) => showToast(error.message || '\u4e0a\u4f20\u5931\u8d25'));
   });
 
   postImagesFileEl.addEventListener('change', () => {
-    handlePostImagesUpload().catch((error) => showToast(error.message || '上传失败'));
+    handlePostImagesUpload().catch((error) => showToast(error.message || '\u4e0a\u4f20\u5931\u8d25'));
   });
 
   postImagesPreviewEl.addEventListener('click', (event) => {
@@ -804,5 +776,5 @@ async function boot() {
 
 boot().catch((error) => {
   console.error(error);
-  showToast(error.message || '后台初始化失败');
+  showToast(error.message || '\u540e\u53f0\u521d\u59cb\u5316\u5931\u8d25');
 });

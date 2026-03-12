@@ -1,4 +1,4 @@
-﻿import { apiFetch, escapeHtml, formatDate, queryParam, renderMarkdownBasic, showToast } from './common.js';
+import { apiFetch, escapeHtml, formatDate, queryParam, renderMarkdownBasic, showToast } from './common.js';
 
 const postDetailEl = document.getElementById('post-detail');
 const recommendListEl = document.getElementById('recommend-list');
@@ -23,6 +23,8 @@ function bindImagePreview() {
 
 async function loadPost(postId) {
   const post = await apiFetch(`/posts/${encodeURIComponent(postId)}`);
+  const primaryImage = post.coverImage || (post.images || [])[0] || null;
+  const galleryImages = (post.images || []).filter((image) => image?.id !== primaryImage?.id);
 
   postDetailEl.innerHTML = `
     <header>
@@ -32,15 +34,15 @@ async function loadPost(postId) {
         <span>${renderTags(post.tags || [])}</span>
       </div>
     </header>
-    ${post.coverImage?.url ? `<img class="post-cover" data-preview-src="${escapeHtml(post.coverImage.url)}" src="${escapeHtml(post.coverImage.url)}" alt="${escapeHtml(post.title)}" />` : ''}
+    ${primaryImage?.url ? `<img class="post-cover" data-preview-src="${escapeHtml(primaryImage.url)}" src="${escapeHtml(primaryImage.url)}" alt="${escapeHtml(post.title)}" />` : ''}
     <section class="post-body">${renderMarkdownBasic(post.contentMd || '')}</section>
-    ${(post.images || []).length ? `<section class="post-detail-images">${post.images
-      .map((image) => `<img data-preview-src="${escapeHtml(image.url)}" src="${escapeHtml(image.url)}" alt="帖子图片" />`)
+    ${galleryImages.length ? `<section class="post-detail-images">${galleryImages
+      .map((image) => `<img data-preview-src="${escapeHtml(image.url)}" src="${escapeHtml(image.url)}" alt="甯栧瓙鍥剧墖" />`)
       .join('')}</section>` : ''}
   `;
 
   bindImagePreview();
-  document.title = `${post.title} | 个人主页`;
+  document.title = `${post.title} | 涓汉涓婚〉`;
 
   return post;
 }
@@ -55,13 +57,12 @@ async function loadRecommendations(currentId) {
   }
 
   recommendListEl.innerHTML = `
-    <h2 style="margin:8px 0 0">更多内容</h2>
+    <h2 style="margin:8px 0 0">鏇村鍐呭</h2>
     ${items
       .map(
         (item) => `
       <article class="post-card" data-post-id="${item.id}">
         <h3 class="post-title">${escapeHtml(item.title)}</h3>
-        <p class="post-summary">${escapeHtml(item.summary || '继续阅读更多内容。')}</p>
         <div class="post-meta"><span>${escapeHtml(formatDate(item.publishedAt))}</span></div>
       </article>
     `
@@ -81,7 +82,7 @@ async function loadRecommendations(currentId) {
 async function boot() {
   const postId = queryParam('postId');
   if (!postId) {
-    postDetailEl.innerHTML = '<div class="empty-block">缺少帖子参数。</div>';
+    postDetailEl.innerHTML = '<div class="empty-block">缂哄皯甯栧瓙鍙傛暟銆?/div>';
     return;
   }
 
@@ -97,6 +98,6 @@ async function boot() {
 
 boot().catch((error) => {
   console.error(error);
-  showToast(error.message || '加载失败');
-  postDetailEl.innerHTML = '<div class="empty-block">内容加载失败，请稍后再试。</div>';
+  showToast(error.message || '鍔犺浇澶辫触');
+  postDetailEl.innerHTML = '<div class="empty-block">鍐呭鍔犺浇澶辫触锛岃绋嶅悗鍐嶈瘯銆?/div>';
 });
