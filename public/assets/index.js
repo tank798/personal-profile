@@ -181,25 +181,6 @@ function goPrev() {
   goToIndex(state.currentIndex - 1);
 }
 
-function handleDeckAreaClick(event) {
-  const activeCard = carouselEl.querySelector('.deck-card.is-active');
-  if (!activeCard) return false;
-
-  const rect = activeCard.getBoundingClientRect();
-  const outerBand = Math.min(80, rect.width * 0.18);
-
-  if (event.clientX < rect.left + outerBand) {
-    goPrev();
-    return true;
-  }
-
-  if (event.clientX > rect.right - outerBand) {
-    goNext();
-    return true;
-  }
-
-  return false;
-}
 
 function bindDeckInteractions() {
   prevBtnEl.addEventListener('click', (event) => {
@@ -218,20 +199,13 @@ function bindDeckInteractions() {
     if (Date.now() < state.suppressClickUntil) return;
 
     const card = event.target.closest('.deck-card');
-    if (!card) {
-      handleDeckAreaClick(event);
-      return;
-    }
+    if (!card) return;
 
     const index = Number(card.dataset.index);
     if (!Number.isFinite(index)) return;
 
     if (index !== state.currentIndex) {
       goToIndex(index);
-      return;
-    }
-
-    if (handleDeckAreaClick(event)) {
       return;
     }
 
