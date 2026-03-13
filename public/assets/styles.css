@@ -832,7 +832,8 @@ html.entry-ready .entry-gate {
   height: clamp(520px, 72vw, 760px);
   overflow: hidden;
   touch-action: pan-y;
-  overscroll-behavior: contain;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
   user-select: none;
   isolation: isolate;
 }
